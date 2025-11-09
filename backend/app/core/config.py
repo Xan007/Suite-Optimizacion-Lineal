@@ -43,6 +43,10 @@ class Settings(BaseSettings):
         ]
 
     PROJECT_NAME: str
+    GROQ_API_KEY: str = ""
+    GROQ_MODEL: str = "openai/gpt-oss-20b"
+    PRIVATE_KEY_PATH: str = ".keys/private_key.pem"
+    PUBLIC_KEY_PATH: str = ".keys/public_key.pem"
 
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":
