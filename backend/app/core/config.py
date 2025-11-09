@@ -45,6 +45,8 @@ class Settings(BaseSettings):
     PROJECT_NAME: str
     GROQ_API_KEY: str = ""
     GROQ_MODEL: str = "openai/gpt-oss-20b"
+    GROQ_VISION_MODEL: str = "meta-llama/llama-4-maverick-17b-128e-instruct"
+    GROQ_VISION_MODEL_FALLBACK: str = "meta-llama/llama-4-scout-17b-16e-instruct"
     PRIVATE_KEY_PATH: str = ".keys/private_key.pem"
     PUBLIC_KEY_PATH: str = ".keys/public_key.pem"
 

@@ -161,7 +161,7 @@ async def analyze_problem_from_image(
     file: UploadFile = File(..., description="Imagen con el problema de optimización"),
     problem_description: Optional[str] = Form(None, description="Descripción adicional del problema"),
     api_key: Optional[str] = Form(None, description="API key del usuario (opcional)"),
-    groq_model: Optional[str] = Form(default="mixtral-8x7b-32768", description="Modelo de Groq a usar"),
+    groq_model: Optional[str] = Form(None, description="Modelo de Groq a usar (se ignorará, siempre usa modelo de visión)"),
 ) -> AnalyzeResponse:
     """Análisis desde Imagen - De Foto a Todas las Representaciones"""
     try:
@@ -190,11 +190,11 @@ async def analyze_problem_from_image(
         # Crear servicio de análisis
         service = AnalyzeService(groq_api_key=api_key)
         
-        # Analizar imagen (usa prompt "basic" internamente)
+        # Analizar imagen (SIEMPRE usa modelo de visión, nunca el groq_model del usuario)
         response = service.analyze_problem_from_image(
             image_data=image_content,
             problem_description=problem_description,
-            groq_model=groq_model or settings.GROQ_MODEL,
+            groq_model=None,  # Ignorar groq_model - siempre usar GROQ_VISION_MODEL
             prompt_name="basic",
         )
         

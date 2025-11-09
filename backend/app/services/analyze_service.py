@@ -283,11 +283,12 @@ class AnalyzeService:
             AnalyzeResponse con análisis y modelo matemático, o None si no es lineal
         """
         try:
-            # Usar modelo del config si no se especifica
-            model_to_use = groq_model or settings.GROQ_MODEL
+            # OBLIGATORIAMENTE usar modelo de visión para imágenes
+            # Usar GROQ_VISION_MODEL primero, si falla usar GROQ_VISION_MODEL_FALLBACK
+            vision_model = settings.GROQ_VISION_MODEL
             
-            logger.info(f"Iniciando análisis desde imagen (prompt: {prompt_name})...")
-            self.groq_client.model = model_to_use
+            logger.info(f"Iniciando análisis desde imagen con modelo: {vision_model}...")
+            self.groq_client.model = vision_model
 
             # Obtener el prompt según el nombre
             prompt_template = get_prompt(prompt_name)
@@ -307,7 +308,16 @@ class AnalyzeService:
             )
             if not groq_result.get("success"):
                 logger.error(f"Error en Groq: {groq_result.get('error')}")
-                return None
+                # Si falla el modelo principal, intentar con fallback
+                logger.warning(f"Intentando con modelo fallback: {settings.GROQ_VISION_MODEL_FALLBACK}")
+                self.groq_client.model = settings.GROQ_VISION_MODEL_FALLBACK
+                groq_result = self.groq_client.chat(
+                    user_prompt,
+                    images=[image_data]
+                )
+                if not groq_result.get("success"):
+                    logger.error(f"Error en Groq fallback: {groq_result.get('error')}")
+                    return None
 
             raw_analysis = groq_result["content"].strip()
 
@@ -340,7 +350,7 @@ class AnalyzeService:
             response = AnalyzeResponse(
                 raw_analysis=raw_analysis,
                 mathematical_model=math_model,
-                groq_model=model_to_use,
+                groq_model=vision_model,
                 is_linear=True,
             )
 
