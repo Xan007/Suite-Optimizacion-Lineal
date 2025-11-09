@@ -20,7 +20,7 @@ class ProblemProcessor:
     Estructura interna (self.problem):
     {
         'variables': {Symbol('x'): 'descripción', ...},
-        'constraints': [(expr, sign, rhs), ...],
+        'constraints': [(expr, sign, rhs, original_op), ...],  # original_op = operador antes de normalizar
         'objective_function': Expr SymPy,
         'objective': 'max' o 'min'
     }
@@ -148,21 +148,31 @@ class ProblemProcessor:
                     # Normalizar según el operador
                     if op == "<=":
                         if self._is_constant(rhs):
-                            self.problem["constraints"].append((lhs, "<=", float(rhs)))  # type: ignore
+                            self.problem["constraints"].append((lhs, "<=", float(rhs), op))  # type: ignore
                         else:
-                            self.problem["constraints"].append((lhs - rhs, "<=", 0.0))  # type: ignore
+                            self.problem["constraints"].append((lhs - rhs, "<=", 0.0, op))  # type: ignore
 
                     elif op == ">=":
                         if self._is_constant(rhs):
-                            self.problem["constraints"].append((-lhs, "<=", float(-rhs)))  # type: ignore
+                            # Verificar si es restricción de no-negatividad (lhs es variable simple, rhs == 0)
+                            # Una variable simple en SymPy es de tipo Symbol
+                            is_single_variable = isinstance(lhs, sp.Symbol)
+                            is_zero_rhs = abs(float(rhs)) < 1e-10  # type: ignore
+                            
+                            if is_single_variable and is_zero_rhs:
+                                # Mantener como está: (lhs, ">=", 0, ">=")
+                                self.problem["constraints"].append((lhs, ">=", 0.0, op))  # type: ignore
+                            else:
+                                # Normalizar a <=: -lhs <= -rhs (pero guardar op original ">=")
+                                self.problem["constraints"].append((-lhs, "<=", float(-rhs), op))  # type: ignore
                         else:
-                            self.problem["constraints"].append((rhs - lhs, "<=", 0.0))  # type: ignore
+                            self.problem["constraints"].append((rhs - lhs, "<=", 0.0, op))  # type: ignore
 
                     elif op in ("==", "="):
                         if self._is_constant(rhs):
-                            self.problem["constraints"].append((lhs, "=", float(rhs)))  # type: ignore
+                            self.problem["constraints"].append((lhs, "=", float(rhs), op))  # type: ignore
                         else:
-                            self.problem["constraints"].append((lhs - rhs, "=", 0.0))  # type: ignore
+                            self.problem["constraints"].append((lhs - rhs, "=", 0.0, op))  # type: ignore
 
                     else:
                         raise ValueError(f"Operador no soportado: {op}")

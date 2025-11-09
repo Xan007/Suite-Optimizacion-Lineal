@@ -5,6 +5,12 @@ from app.schemas.analyze_schema import AnalyzeRequest, AnalyzeImageRequest, Anal
 from app.services.analyze_service import AnalyzeService
 from app.core.config import settings
 from app.core.logger import logger
+from app.api.docs import (
+    ANALYZE_ENDPOINT_DOC,
+    VALIDATE_MODEL_ENDPOINT_DOC,
+    GET_REPRESENTATIONS_ENDPOINT_DOC,
+    ANALYZE_IMAGE_ENDPOINT_DOC,
+)
 
 router = APIRouter(prefix="/analyze", tags=["analyze"])
 
@@ -34,22 +40,14 @@ def get_api_key(request: AnalyzeRequest) -> str:
     return api_key
 
 
-@router.post("/", response_model=AnalyzeResponse, status_code=status.HTTP_200_OK)
+@router.post(
+    "/", 
+    response_model=AnalyzeResponse, 
+    status_code=status.HTTP_200_OK,
+    description=ANALYZE_ENDPOINT_DOC
+)
 async def analyze_problem(request: AnalyzeRequest) -> AnalyzeResponse:
-    """
-    Analiza un problema de optimización lineal usando Groq.
-    
-    Retorna:
-    - Análisis textual de Groq
-    - Modelo matemático estructurado
-    - Múltiples representaciones (canónica, estándar, matricial, dual)
-    
-    Args:
-        request: AnalyzeRequest con el problema y configuración
-        
-    Returns:
-        AnalyzeResponse con análisis, modelo y representaciones
-    """
+    """Análisis Completo de Problema de Optimización Lineal"""
     try:
         logger.info(f"Nueva solicitud de análisis recibida")
         
@@ -97,17 +95,12 @@ async def analyze_problem(request: AnalyzeRequest) -> AnalyzeResponse:
         )
 
 
-@router.post("/validate-model")
+@router.post(
+    "/validate-model",
+    description=VALIDATE_MODEL_ENDPOINT_DOC
+)
 async def validate_model(model: dict) -> dict:
-    """
-    Valida un modelo matemático usando SymPy.
-    
-    Args:
-        model: Diccionario con estructura del modelo
-        
-    Returns:
-        dict con resultado de validación
-    """
+    """Validar Modelo Matemático con SymPy"""
     try:
         from app.schemas.analyze_schema import MathematicalModel
         
@@ -133,17 +126,12 @@ async def validate_model(model: dict) -> dict:
         )
 
 
-@router.post("/get-representations")
+@router.post(
+    "/get-representations",
+    description=GET_REPRESENTATIONS_ENDPOINT_DOC
+)
 async def get_representations(model: dict) -> dict:
-    """
-    Genera todas las representaciones del modelo (canónica, estándar, matricial, dual).
-    
-    Args:
-        model: Diccionario con estructura procesada del problema
-        
-    Returns:
-        dict con todas las representaciones
-    """
+    """Generar Todas las Representaciones de un Modelo"""
     try:
         from app.services.problem_transformer import ProblemTransformer
         
@@ -163,28 +151,19 @@ async def get_representations(model: dict) -> dict:
         )
 
 
-@router.post("/analyze-image", response_model=AnalyzeResponse, status_code=status.HTTP_200_OK)
+@router.post(
+    "/analyze-image", 
+    response_model=AnalyzeResponse, 
+    status_code=status.HTTP_200_OK,
+    description=ANALYZE_IMAGE_ENDPOINT_DOC
+)
 async def analyze_problem_from_image(
     file: UploadFile = File(..., description="Imagen con el problema de optimización"),
     problem_description: Optional[str] = Form(None, description="Descripción adicional del problema"),
     api_key: Optional[str] = Form(None, description="API key del usuario (opcional)"),
     groq_model: Optional[str] = Form(default="mixtral-8x7b-32768", description="Modelo de Groq a usar"),
 ) -> AnalyzeResponse:
-    """
-    Analiza un problema de optimización lineal desde una imagen.
-    
-    Acepta una imagen (PNG, JPG, etc.) que contiene un problema escrito.
-    Groq vision extraerá el texto y analizará el problema.
-    
-    Args:
-        file: Archivo de imagen con el problema
-        problem_description: Descripción adicional (opcional)
-        api_key: API key del usuario (opcional)
-        groq_model: Modelo de Groq a usar
-        
-    Returns:
-        AnalyzeResponse con análisis, modelo y representaciones
-    """
+    """Análisis desde Imagen - De Foto a Todas las Representaciones"""
     try:
         logger.info("Nueva solicitud de análisis desde imagen recibida")
         
