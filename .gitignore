@@ -1,0 +1,13 @@
+# Root ignore
+# Ignore environment files
+.env
+.env.*
+
+# Virtual envs
+.venv/
+venv/
+ENV/
+
+# OS files
+.DS_Store
+Thumbs.db

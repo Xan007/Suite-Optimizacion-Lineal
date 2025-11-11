@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Suite Optimización Lineal</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2rem; }
+        header { margin-bottom: 2rem; }
+        form { margin-bottom: 2rem; padding: 1rem; border: 1px solid #ccc; border-radius: 8px; }
+        textarea { width: 100%; height: 140px; }
+        input[type=file] { margin-top: .5rem; }
+        .result { white-space: pre-wrap; background: #f9f9f9; padding: 1rem; border-radius: 6px; }
+    </style>
+</head>
+<body>
+<header>
+    <h1>Suite Optimización Lineal</h1>
+    <p>Analiza problemas de programación lineal vía texto o imagen (Groq + SymPy).</p>
+</header>
+<section>
+    <h2>Analizar Problema (Texto)</h2>
+    <form id="text-form">
+        <label>Descripción del problema:</label><br>
+        <textarea name="problem" required></textarea><br>
+        <button type="submit">Analizar</button>
+    </form>
+</section>
+<section>
+    <h2>Analizar Problema (Imagen)</h2>
+    <form id="image-form" enctype="multipart/form-data">
+        <label>Imagen:</label><br>
+        <input type="file" name="file" accept="image/*" required><br>
+        <label>Descripción adicional (opcional):</label><br>
+        <textarea name="problem_description"></textarea><br>
+        <button type="submit">Analizar Imagen</button>
+    </form>
+</section>
+<section>
+    <h2>Resultado</h2>
+    <div id="result" class="result">(sin resultados todavía)</div>
+</section>
+<script>
+const apiBase = '/api/v1';
+
+function renderResult(data) {
+    document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+}
+
+document.getElementById('text-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const problem = e.target.problem.value;
+    const payload = { problem: problem };
+    const resp = await fetch(`${apiBase}/analyze/`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    renderResult(await resp.json());
+});
+
+document.getElementById('image-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const resp = await fetch(`${apiBase}/analyze/analyze-image`, { method: 'POST', body: formData });
+    renderResult(await resp.json());
+});
+</script>
+</body>
+</html>

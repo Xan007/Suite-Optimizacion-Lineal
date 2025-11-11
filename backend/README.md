@@ -1,6 +1,6 @@
 # Backend - Suite de Optimización Lineal
 
-API REST con FastAPI para análisis automático de problemas de optimización lineal usando Groq y SymPy.
+Aplicación web con Django para análisis automático de problemas de optimización lineal usando Groq y SymPy.
 
 ## 🚀 Características
 
@@ -40,19 +40,18 @@ ENVIRONMENT="local"
 
 **Obtén tu API key en:** https://console.groq.com
 
-### 4. Ejecutar servidor
+### 4. Ejecutar servidor (Django)
 ```powershell
 cd backend
-uvicorn app.main:app --reload
+python manage.py migrate
+python manage.py runserver
 ```
 
-El servidor estará disponible en: `http://localhost:8000`
+El servidor estará disponible en: `http://localhost:8000` y la interfaz básica en `/`.
 
 ## 📚 Documentación
 
-- **Swagger UI**: http://localhost:8000/api/v1/docs
-- **ReDoc**: http://localhost:8000/api/v1/redoc
-- **OpenAPI JSON**: http://localhost:8000/api/v1/openapi.json
+La documentación automática Swagger ya no está incluida por defecto tras la migración a Django. Puedes integrarla con drf-spectacular o Django REST Framework si es necesario.
 
 ## 🔌 Endpoints
 
@@ -106,32 +105,24 @@ POST /api/v1/analyze/get-representations
 POST /api/v1/analyze/validate-model
 ```
 
-## 🏗️ Estructura del Proyecto
+## 🏗️ Estructura del Proyecto (Django)
 
 ```
 backend/
-├── app/
-│   ├── api/
-│   │   ├── routes/
-│   │   │   ├── test.py          # Health check
-│   │   │   ├── analyze.py       # Análisis de problemas
-│   │   ├── dependencies/
-│   │   └── main.py
+├── manage.py
+├── optiline/                # Proyecto Django (settings, urls, wsgi, asgi)
+├── webapp/                  # App Django con vistas y templates
+│   ├── views.py             # Vistas equivalentes a endpoints previos
+│   ├── urls.py              # Rutas /api/v1/... mantenidas
+│   ├── templates/
+│   │   └── index.html       # Interfaz básica
+├── app/                     # Lógica existente (NO modificada)
 │   ├── core/
-│   │   ├── config.py            # Configuración (.env)
-│   │   ├── logger.py            # Logging
-│   │   ├── groq_client.py       # Cliente Groq
-│   │   ├── rsa_manager.py       # Cifrado RSA (opcional)
-│   │   └── security_utils.py    # Utilidades de seguridad
 │   ├── services/
-│   │   └── analyze_service.py   # Lógica de negocio + SymPy
 │   ├── schemas/
-│   │   └── analyze_schema.py    # Modelos Pydantic
-│   ├── utils/
-│   └── main.py
-├── tests/
-├── .env                         # Variables de entorno
+│   └── api/ (legacy FastAPI, puede eliminarse si no se usa)
 ├── requirements.txt
+├── .env
 └── README.md
 ```
 
