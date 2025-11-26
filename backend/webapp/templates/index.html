@@ -475,10 +475,16 @@
     </div>
 
     <script>
+        // ====================================================================
+        // CONFIGURACIÓN GLOBAL
+        // ====================================================================
         const apiBase = '/api/v1';
         let lastAnalysis = null;
         let selectedMethod = null;
 
+        // ====================================================================
+        // ANÁLISIS: Entrada de datos (texto e imagen)
+        // ====================================================================
         async function analyzeText() {
             const text = document.getElementById('problem-text').value;
             if (!text.trim()) {
@@ -534,6 +540,9 @@
             }
         }
 
+        // ====================================================================
+        // ANÁLISIS: Procesamiento de respuesta
+        // ====================================================================
         function handleAnalysisResponse(json) {
             lastAnalysis = json;
             showMessage('✓ Análisis completado', 'success');
@@ -584,6 +593,9 @@
             document.getElementById('solve-btn').style.display = 'none';
         }
 
+        // ====================================================================
+        // MÉTODO: Selección y ejecución
+        // ====================================================================
         function selectMethod(method, btnElement) {
             selectedMethod = method;
             document.querySelectorAll('.method-btn').forEach(b => b.classList.remove('active'));
@@ -591,6 +603,9 @@
             document.getElementById('solve-btn').style.display = 'block';
         }
 
+        // ====================================================================
+        // VISUALIZACIÓN: Modelo matemático
+        // ====================================================================
         function displayModel(model) {
             const div = document.createElement('div');
             div.className = 'model-display';
@@ -600,9 +615,11 @@
             title.textContent = (model.objective === 'min' ? '📉 Minimizar' : '📈 Maximizar');
             div.appendChild(title);
 
+            // Mostrar función objetivo en LaTeX si está disponible
             const objLine = document.createElement('div');
             objLine.className = 'objective-line';
-            objLine.textContent = model.objective_function;
+            const objText = model.objective_function_latex || model.objective_function;
+            objLine.innerHTML = `$$${objText}$$`;
             div.appendChild(objLine);
 
             if (model.constraints && model.constraints.length > 0) {
@@ -615,17 +632,54 @@
 
                 const consList = document.createElement('div');
                 consList.className = 'constraints-list';
-                model.constraints.forEach(c => {
+                if (model.constraints_latex && model.constraints_latex.length > 0) {
+                    model.constraints_latex.forEach((c, idx) => {
+                        const item = document.createElement('div');
+                        item.className = 'constraint-item';
+                        item.innerHTML = `$$${c}$$`;
+                        consList.appendChild(item);
+                    });
+                } else {
+                    model.constraints.forEach(c => {
+                        const item = document.createElement('div');
+                        item.className = 'constraint-item';
+                        item.innerHTML = `$$${c}$$`;
+                        consList.appendChild(item);
+                    });
+                }
+                div.appendChild(consList);
+            }
+
+            // No-negatividad en LaTeX
+            if (model.non_negativity_latex && model.non_negativity_latex.length > 0) {
+                const nonnegTitle = document.createElement('div');
+                nonnegTitle.style.fontWeight = '600';
+                nonnegTitle.style.color = '#1a1a1a';
+                nonnegTitle.style.marginTop = '0.8rem';
+                nonnegTitle.style.fontSize = '0.9rem';
+                nonnegTitle.textContent = 'No-negatividad:';
+                div.appendChild(nonnegTitle);
+
+                const nonnegList = document.createElement('div');
+                nonnegList.className = 'constraints-list';
+                model.non_negativity_latex.forEach(c => {
                     const item = document.createElement('div');
                     item.className = 'constraint-item';
-                    item.textContent = c;
-                    consList.appendChild(item);
+                    item.style.fontSize = '0.85rem';
+                    item.innerHTML = `$$${c}$$`;
+                    nonnegList.appendChild(item);
                 });
-                div.appendChild(consList);
+                div.appendChild(nonnegList);
             }
 
             document.getElementById('model-display').innerHTML = '';
             document.getElementById('model-display').appendChild(div);
+
+            // Renderizar MathJax después de insertar el contenido
+            if (window.MathJax) {
+                MathJax.contentDocument = document;
+                MathJax.typesetPromise([div]).catch(err => console.error('MathJax error:', err));
+            }
         }
 
         async function solveProblem() {
@@ -669,11 +723,18 @@
             }
         }
 
+        // ====================================================================
+        // SOLUCIÓN: Visualización de resultados
+        // ====================================================================
         function displaySolution(result) {
             console.log('displaySolution called with result:', result);
             document.getElementById('solution-section').style.display = 'block';
             const content = document.getElementById('solution-content');
             content.innerHTML = '';
+
+            // Limpiar gráficas previas de Plotly
+            const existingPlot = document.getElementById('graphical-plot');
+            if (existingPlot) existingPlot.remove();
 
             // Método
             const methodDiv = document.createElement('div');
@@ -1098,8 +1159,9 @@
                         result.optimal_point[1] === pt.point[1]);
 
                     if (isOptimal) {
-                        tr.style.background = '#f0fff0';
+                        tr.style.background = '#fff3e0';
                         tr.style.fontWeight = '600';
+                        tr.style.borderLeft = '4px solid #ff9800';
                     }
 
                     // Vértice número
@@ -1125,8 +1187,8 @@
 
                     // Estado
                     const statusCell = document.createElement('td');
-                    statusCell.textContent = isOptimal ? '⭐ ÓPTIMO' : 'Factible';
-                    statusCell.style.color = isOptimal ? '#008000' : '#666';
+                    statusCell.textContent = isOptimal ? '★ ÓPTIMO' : 'Factible';
+                    statusCell.style.color = isOptimal ? '#ff6b35' : '#666';
                     statusCell.style.fontWeight = isOptimal ? '700' : '400';
                     tr.appendChild(statusCell);
 
@@ -1134,6 +1196,58 @@
                 });
                 table.appendChild(tbody);
                 wrapper.appendChild(table);
+
+                // Sección de Solución Óptima
+                if (result.optimal_point) {
+                    const optimalSection = document.createElement('div');
+                    optimalSection.style.marginTop = '1.5rem';
+                    optimalSection.style.padding = '1.2rem';
+                    optimalSection.style.background = '#fff3e0';
+                    optimalSection.style.border = '3px solid #ff9800';
+                    optimalSection.style.borderRadius = '8px';
+                    optimalSection.style.boxShadow = '0 2px 8px rgba(255, 152, 0, 0.15)';
+
+                    const optimalTitle = document.createElement('div');
+                    optimalTitle.style.fontWeight = '700';
+                    optimalTitle.style.color = '#ff6b35';
+                    optimalTitle.style.marginBottom = '0.8rem';
+                    optimalTitle.style.fontSize = '1.2rem';
+                    optimalTitle.textContent = '★ SOLUCIÓN ÓPTIMA';
+                    optimalSection.appendChild(optimalTitle);
+
+                    // Valores de variables
+                    const opPoint = Array.isArray(result.optimal_point) ? result.optimal_point : [result.optimal_point[0], result.optimal_point[1]];
+                    const varNames = Object.keys(result.variables || {});
+                    const varsList = document.createElement('div');
+                    varsList.style.marginBottom = '0.8rem';
+                    varNames.forEach((varName, idx) => {
+                        const valLine = document.createElement('div');
+                        valLine.style.marginBottom = '0.3rem';
+                        valLine.style.fontSize = '0.95rem';
+                        valLine.style.display = 'flex';
+                        valLine.style.justifyContent = 'space-between';
+                        valLine.style.paddingBottom = '0.3rem';
+                        valLine.style.borderBottom = '1px solid rgba(255,152,0,0.1)';
+                        valLine.innerHTML = `<strong>${varName}</strong> <span style="font-family: monospace; color: #0066cc;">${Number(opPoint[idx]).toFixed(4)}</span>`;
+                        varsList.appendChild(valLine);
+                    });
+                    optimalSection.appendChild(varsList);
+
+                    // Valor óptimo de Z
+                    const zLine = document.createElement('div');
+                    zLine.style.marginTop = '0.8rem';
+                    zLine.style.paddingTop = '0.8rem';
+                    zLine.style.borderTop = '2px solid #ff9800';
+                    zLine.style.fontWeight = '700';
+                    zLine.style.fontSize = '1.15rem';
+                    zLine.style.display = 'flex';
+                    zLine.style.justifyContent = 'space-between';
+                    zLine.innerHTML = `<span>Valor óptimo:</span> <span style="color: #ff6b35; font-size: 1.3rem; font-family: monospace;">Z = ${Number(result.objective_value).toFixed(6)}</span>`;
+                    optimalSection.appendChild(zLine);
+
+                    wrapper.appendChild(optimalSection);
+                }
+
                 content.appendChild(wrapper);
             }
 
@@ -1191,6 +1305,9 @@
             }
         }
 
+        // ====================================================================
+        // UTILIDADES: Mensajes y gráficos
+        // ====================================================================
         function showMessage(text, type) {
             const msgDiv = document.getElementById('message');
             msgDiv.className = `message ${type}`;
