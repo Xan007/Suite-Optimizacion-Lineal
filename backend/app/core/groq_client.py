@@ -95,13 +95,81 @@ class GroqClient:
             messages.append({"role": "user", "content": content})
 
             logger.info(f"Enviando mensaje a Groq (modelo={self.model})")
+            # Intento principal
+            try:
+                chat_completion = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                )
+            except Exception as primary_exc:
+                # Si el error indica que el modelo fue decommissioned, no existe o no hay acceso,
+                # intentar con fallback una vez
+                err_str = str(primary_exc)
+                logger.error("Error en GroqClient.chat", exc_info=True)
+                should_retry = False
+                low = err_str.lower()
+                if "decommission" in low or "model_decommissioned" in low:
+                    should_retry = True
+                if "model_not_found" in low or "does not exist" in low or "you do not have access" in low:
+                    should_retry = True
 
-            chat_completion = self.client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                temperature=temperature,
-                max_tokens=max_tokens,
-            )
+                if should_retry and getattr(self, "_retried_with_fallback", False) is False:
+                    # Build a list of fallback candidates and pick the first that isn't the current model
+                    candidates = []
+                    try:
+                        candidates.append(getattr(settings, 'GROQ_MODEL_FALLBACK', None))
+                    except Exception:
+                        pass
+                    try:
+                        candidates.append(getattr(settings, 'GROQ_MODEL', None))
+                    except Exception:
+                        pass
+                    # sensible common alternatives
+                    candidates.extend([
+                        'openai/gpt-oss-20b',
+                        'mixtral-8x7b',
+                        'gpt-4o-mini'
+                    ])
+
+                    # Remove falsy and duplicates while preserving order
+                    seen = set()
+                    filtered = []
+                    for c in candidates:
+                        if not c:
+                            continue
+                        if c in seen:
+                            continue
+                        seen.add(c)
+                        filtered.append(c)
+
+                    # choose a fallback that's different from the current model
+                    fallback_model = None
+                    for cand in filtered:
+                        if cand != self.model:
+                            fallback_model = cand
+                            break
+
+                    if not fallback_model:
+                        logger.warning(f"No hay un modelo fallback distinto a {self.model}; no se intentará reintento")
+                        return {"success": False, "error": str(primary_exc)}
+
+                    logger.warning(f"Modelo {self.model} no disponible; intentando con fallback {fallback_model}")
+                    # try once with the chosen fallback without mutating self.model permanently
+                    self._retried_with_fallback = True
+                    try:
+                        chat_completion = self.client.chat.completions.create(
+                            model=fallback_model,
+                            messages=messages,
+                            temperature=temperature,
+                            max_tokens=max_tokens,
+                        )
+                    except Exception as e2:
+                        logger.error("Reintento con modelo fallback falló", exc_info=True)
+                        return {"success": False, "error": str(e2)}
+                else:
+                    return {"success": False, "error": str(primary_exc)}
 
             choice = chat_completion.choices[0].message
             tokens_used = getattr(chat_completion.usage, "total_tokens", 0)

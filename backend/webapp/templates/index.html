@@ -3,112 +3,404 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Suite Optimización Lineal</title>
     <style>
-        :root {
-            --bg: #0f1724;
-            --card: #0b1220;
-            --muted: #9aa4b2;
-            --accent: #5eead4;
-            --panel: #071126;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         body {
-            font-family: Inter, Arial, sans-serif;
-            margin: 1.5rem;
-            background: linear-gradient(180deg, #07122a 0%, #081026 100%);
-            color: #e6eef8
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #f5f7fa;
+            color: #1a1a1a;
+            padding: 2rem;
         }
 
         header {
-            margin-bottom: 1.25rem;
-            display: flex;
-            align-items: center;
-            gap: 1rem
+            text-align: center;
+            margin-bottom: 2.5rem;
         }
 
         h1 {
-            margin: 0;
-            font-size: 1.4rem
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            color: #666;
+            font-weight: 400;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 900px) {
+            .two-column {
+                grid-template-columns: 1fr;
+            }
         }
 
         .card {
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
-            padding: 1rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 18px rgba(2, 6, 23, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.03)
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e8ecf1;
         }
 
-        form {
-            margin-bottom: 1rem;
-            padding: 1rem;
-            border-radius: 8px;
+        .card h2 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #1a1a1a;
+        }
+
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 0.6rem;
+        }
+
+        textarea,
+        input[type="file"],
+        input[type="text"] {
+            width: 100%;
+            padding: 0.9rem;
+            border: 2px solid #e0e4e8;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            color: #1a1a1a;
+            transition: border-color 0.2s;
+        }
+
+        textarea:focus,
+        input:focus {
+            outline: none;
+            border-color: #0066cc;
+            background-color: #f8fbff;
         }
 
         textarea {
-            width: 100%;
-            height: 120px;
-            background: transparent;
-            color: inherit;
-            border: 1px dashed rgba(255, 255, 255, 0.06);
-            padding: 0.6rem;
-            border-radius: 6px
-        }
-
-        input[type=file] {
-            margin-top: .5rem;
+            min-height: 120px;
+            resize: vertical;
         }
 
         button {
-            background: var(--accent);
-            color: #06202a;
+            background: #0066cc;
+            color: white;
             border: none;
-            padding: 0.6rem 0.9rem;
-            border-radius: 8px;
-            cursor: pointer
+            padding: 0.9rem 1.8rem;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
         }
 
-        .result {
-            white-space: pre-wrap;
-            background: rgba(255, 255, 255, 0.02);
-            padding: 1rem;
-            border-radius: 8px;
-            color: var(--muted);
+        button:hover {
+            background: #0052a3;
+            box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
+            transform: translateY(-1px);
         }
 
-        .methods {
+        button:active {
+            transform: translateY(0);
+        }
+
+        .btn-group {
             display: flex;
-            gap: 0.5rem;
+            gap: 0.8rem;
             flex-wrap: wrap;
-            margin-top: 0.6rem
+            margin: 1rem 0;
         }
 
         .method-btn {
-            background: transparent;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            color: var(--muted);
-            padding: 0.4rem 0.6rem;
-            border-radius: 8px;
-            cursor: pointer
+            background: white;
+            color: #0066cc;
+            border: 2px solid #0066cc;
+            padding: 0.7rem 1.4rem;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .method-btn:hover {
+            background: #f0f4ff;
         }
 
         .method-btn.active {
-            background: rgba(94, 234, 212, 0.12);
-            color: var(--accent);
-            border-color: rgba(94, 234, 212, 0.18)
+            background: #0066cc;
+            color: white;
+            box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
         }
 
-        .panel-grid {
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .result-panel {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e8ecf1;
+        }
+
+        .model-display {
+            background: #f8fbff;
+            border-left: 4px solid #0066cc;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+        }
+
+        .model-display .title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #0066cc;
+            margin-bottom: 0.8rem;
+        }
+
+        .objective-line {
+            font-size: 0.95rem;
+            margin: 0.5rem 0;
+            color: #1a1a1a;
+            font-family: 'Courier New', monospace;
+        }
+
+        .constraints-list {
+            margin-top: 1rem;
+        }
+
+        .constraint-item {
+            font-size: 0.9rem;
+            padding: 0.5rem 0;
+            color: #1a1a1a;
+            font-family: 'Courier New', monospace;
+        }
+
+        .solver-result {
+            margin-top: 1.5rem;
+        }
+
+        .result-card {
+            background: #f0f4ff;
+            border: 1px solid #d0deff;
+            border-radius: 10px;
+            padding: 1.2rem;
+            margin-bottom: 1rem;
+        }
+
+        .result-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #0066cc;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.4rem;
+        }
+
+        .result-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            font-family: 'Courier New', monospace;
+        }
+
+        .step-iteration {
+            background: white;
+            border: 1px solid #e0e4e8;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .step-header {
+            font-weight: 700;
+            color: #0066cc;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        .step-detail {
+            font-size: 0.85rem;
+            color: #666;
+            margin: 0.3rem 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .variables-grid {
             display: grid;
-            grid-template-columns: 1fr 380px;
-            gap: 1rem
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
         }
 
-        @media(max-width:900px) {
-            .panel-grid {
-                grid-template-columns: 1fr
+        .var-item {
+            background: #f8fbff;
+            border-left: 3px solid #0066cc;
+            padding: 1rem;
+            border-radius: 8px;
+        }
+
+        .var-name {
+            font-weight: 600;
+            color: #0066cc;
+            font-size: 0.9rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .var-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            font-family: 'Courier New', monospace;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 0.8rem;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background: #f0f4ff;
+            color: #0066cc;
+            font-weight: 700;
+            border-bottom: 2px solid #d0deff;
+        }
+
+        td {
+            border-bottom: 1px solid #e0e4e8;
+            color: #1a1a1a;
+        }
+
+        tr:hover {
+            background: #f8fbff;
+        }
+
+        .method-explanation {
+            background: #fff8f0;
+            border-left: 4px solid #ff9500;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #333;
+            line-height: 1.6;
+            margin: 1rem 0;
+            white-space: pre-wrap;
+        }
+
+        .sensitivity-section {
+            background: #f0fff4;
+            border-left: 4px solid #00aa44;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+
+        .sensitivity-title {
+            font-weight: 700;
+            color: #00aa44;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        .message {
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            font-size: 0.95rem;
+        }
+
+        .message.error {
+            background: #fff0f0;
+            color: #c00;
+            border: 1px solid #ffcccc;
+        }
+
+        .message.success {
+            background: #f0fff4;
+            color: #00aa44;
+            border: 1px solid #ccffdd;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 3px solid #0066cc;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 0.6s linear infinite;
+            vertical-align: middle;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
             }
+        }
+
+        .no-applicable {
+            background: #fff0f0;
+            border-left: 4px solid #cc0000;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .no-applicable-title {
+            font-weight: 700;
+            color: #cc0000;
+            margin-bottom: 0.5rem;
+        }
+
+        .no-applicable-item {
+            color: #666;
+            margin: 0.4rem 0;
+            padding-left: 1rem;
         }
     </style>
     <script>
@@ -118,229 +410,1017 @@
         };
     </script>
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 
 <body>
     <header>
-        <div>
-            <h1>Suite Optimización Lineal</h1>
-            <div style="color:var(--muted);font-size:0.9rem">Analiza y resuelve problemas de programación lineal (IA +
-                SymPy + Solvers)</div>
-        </div>
+        <h1>Suite Optimización Lineal</h1>
+        <p class="subtitle">Análisis y resolución de problemas de programación lineal</p>
     </header>
-    <div class="panel-grid">
-        <div>
+
+    <div class="container">
+        <div class="two-column">
+            <!-- INPUT SECTION -->
             <div class="card">
-                <h2 style="margin-top:0">Analizar Problema (Texto)</h2>
-                <form id="text-form">
-                    <label>Descripción del problema:</label><br>
-                    <textarea name="problem" required></textarea><br>
-                    <button type="submit">Analizar</button>
-                </form>
+                <h2>📝 Ingresar Problema</h2>
+
+                <div class="form-group">
+                    <label>Descripción (Texto)</label>
+                    <textarea id="problem-text"
+                        placeholder="Ejemplo: Maximizar 3x + 2y sujeto a: x + y ≤ 4; x ≤ 3; x,y ≥ 0"></textarea>
+                    <button onclick="analyzeText()" style="margin-top: 0.8rem; width: 100%;">Analizar Problema</button>
+                </div>
+
+                <div style="text-align: center; color: #ccc; margin: 1.5rem 0;">o</div>
+
+                <div class="form-group">
+                    <label>Análisis desde Imagen</label>
+                    <input type="file" id="image-file" accept="image/*">
+                    <textarea id="image-description" placeholder="Descripción adicional (opcional)"
+                        style="margin-top: 0.8rem; height: 80px;"></textarea>
+                    <button onclick="analyzeImage()" style="margin-top: 0.8rem; width: 100%;">Analizar Imagen</button>
+                </div>
+
+                <div id="message" style="margin-top: 1rem;"></div>
             </div>
 
-            <div class="card" style="margin-top:1rem">
-                <h2 style="margin-top:0">Analizar Problema (Imagen)</h2>
-                <form id="image-form" enctype="multipart/form-data">
-                    <label>Imagen:</label><br>
-                    <input type="file" name="file" accept="image/*" required><br>
-                    <label>Descripción adicional (opcional):</label><br>
-                    <textarea name="problem_description"></textarea><br>
-                    <button type="submit">Analizar Imagen</button>
-                </form>
+            <!-- RESULT SECTION -->
+            <div class="result-panel">
+                <h2>📊 Modelo Canónico</h2>
+                <div id="model-display">
+                    <p style="color: #999; font-style: italic;">Aquí aparecerá el modelo después del análisis...</p>
+                </div>
+
+                <div class="section-title">Métodos Disponibles</div>
+                <div id="methods-container">
+                    <p style="color: #999; font-size: 0.9rem;">Selecciona un método después de analizar el problema</p>
+                </div>
+
+                <div id="not-applicable-methods" style="margin-top: 1rem;"></div>
+
+                <button id="solve-btn" onclick="solveProblem()" style="width: 100%; margin-top: 1.5rem; display: none;">
+                    ▶ Ejecutar Método Seleccionado
+                </button>
             </div>
         </div>
 
-        <div>
-            <div class="card">
-                <h2 style="margin-top:0">Resultado</h2>
-                <div id="result" class="result">(sin resultados todavía)</div>
-                <div id="methods" style="margin-top:0.8rem"></div>
-                <div id="solve-panel" style="margin-top:0.8rem; display:none">
-                    <button id="run-solve">Ejecutar método seleccionado</button>
-                </div>
+        <!-- SOLUTION SECTION -->
+        <div id="solution-section" style="display: none;">
+            <div class="result-panel">
+                <h2>🎯 Solución</h2>
+                <div id="solution-content"></div>
             </div>
         </div>
     </div>
+
     <script>
         const apiBase = '/api/v1';
-
-        function exprToLatex(s) {
-            if (!s) return '';
-            try {
-                // Replace power ** with ^
-                s = s.replace(/\*\*/g, '^');
-                // replace multiplication * with \cdot (but avoid replacing when inside ^)
-                s = s.replace(/\s*\*\s*/g, ' \\cdot ');
-                // inequalities
-                s = s.replace(/<=/g, '\\le');
-                s = s.replace(/>=/g, '\\ge');
-                // replace variable subscripts like x1 -> x_{1}
-                s = s.replace(/([a-zA-Z]+)(\d+)/g, '$1_{ $2 }');
-                // clean multiple spaces
-                s = s.replace(/\s+/g, ' ');
-                return s;
-            } catch (e) {
-                return s;
-            }
-        }
-
-        function renderResult(data) {
-            const el = document.getElementById('result');
-            el.innerHTML = '';
-
-            const model = data.mathematical_model || (data.result && data.result.mathematical_model) || (data.mathematical_model && data.mathematical_model.mathematical_model && data.mathematical_model.mathematical_model.mathematical_model && null);
-
-            if (model) {
-                const title = document.createElement('h3');
-                title.textContent = 'Modelo canónico';
-                title.style.margin = '0 0 0.5rem 0';
-                title.style.color = 'var(--accent)';
-                el.appendChild(title);
-
-                const objTitle = document.createElement('div');
-                objTitle.textContent = (model.objective && model.objective.toLowerCase() === 'min') ? 'Minimizar:' : 'Maximizar:';
-                objTitle.style.color = 'var(--muted)';
-                el.appendChild(objTitle);
-
-                const objExpr = document.createElement('div');
-                objExpr.style.fontFamily = 'monospace';
-                objExpr.style.fontSize = '1.05rem';
-                objExpr.style.margin = '0.35rem 0 0.75rem 0';
-                objExpr.innerHTML = `$$ ${exprToLatex(model.objective_function || '')} $$`;
-                el.appendChild(objExpr);
-
-                const subj = document.createElement('div');
-                subj.textContent = 'Sujeto a:';
-                subj.style.fontWeight = '600';
-                subj.style.marginBottom = '0.35rem';
-                el.appendChild(subj);
-
-                const ul = document.createElement('div');
-                ul.style.color = 'var(--muted)';
-                ul.style.marginTop = '0';
-                (model.constraints || []).forEach(c => {
-                    const li = document.createElement('div');
-                    li.style.fontFamily = 'monospace';
-                    li.style.marginBottom = '0.25rem';
-                    li.innerHTML = `$$ ${exprToLatex(c)} $$`;
-                    ul.appendChild(li);
-                });
-                el.appendChild(ul);
-
-                if (model.variables && Object.keys(model.variables).length) {
-                    const varsTitle = document.createElement('div');
-                    varsTitle.textContent = 'Variables (descripción):';
-                    varsTitle.style.color = 'var(--muted)';
-                    varsTitle.style.marginTop = '0.6rem';
-                    el.appendChild(varsTitle);
-
-                    const varsList = document.createElement('div');
-                    varsList.style.fontFamily = 'monospace';
-                    varsList.style.color = 'var(--muted)';
-                    Object.entries(model.variables).forEach(([k, v]) => {
-                        const row = document.createElement('div');
-                        row.textContent = `${k} — ${v || ''}`;
-                        varsList.appendChild(row);
-                    });
-                    el.appendChild(varsList);
-                }
-
-                // Ask MathJax to typeset the new content
-                if (window.MathJax && window.MathJax.typesetPromise) {
-                    window.MathJax.typesetPromise([el]).catch(function (err) { console.warn('MathJax typeset error', err) });
-                }
-                return;
-            }
-
-            if (data && data.result && typeof data.result === 'object') {
-                el.innerHTML = '<pre>' + JSON.stringify(data.result, null, 2) + '</pre>';
-                return;
-            }
-
-            el.textContent = JSON.stringify(data, null, 2);
-        }
-
         let lastAnalysis = null;
         let selectedMethod = null;
 
-        async function handleAnalysisResponse(json) {
-            lastAnalysis = json;
-            renderResult(json);
-            const methodsDiv = document.getElementById('methods');
-            methodsDiv.innerHTML = '';
-
-            const suggested = json.suggested_methods || (json.result && json.result.suggested_methods) || [];
-            const notApp = json.methods_not_applicable || (json.result && json.result.methods_not_applicable) || {};
-
-            if (suggested.length === 0 && Object.keys(notApp).length === 0) {
-                methodsDiv.textContent = 'No se generaron sugerencias de métodos.';
-                document.getElementById('solve-panel').style.display = 'none';
+        async function analyzeText() {
+            const text = document.getElementById('problem-text').value;
+            if (!text.trim()) {
+                showMessage('Por favor ingresa una descripción del problema', 'error');
                 return;
             }
+            await analyze({ problem: text });
+        }
 
-            const title = document.createElement('div');
-            title.style.color = 'var(--muted)'; title.style.marginBottom = '0.5rem'; title.textContent = 'Métodos sugeridos';
-            methodsDiv.appendChild(title);
+        async function analyzeImage() {
+            const file = document.getElementById('image-file').files[0];
+            if (!file) {
+                showMessage('Por favor selecciona una imagen', 'error');
+                return;
+            }
+            const formData = new FormData();
+            formData.append('file', file);
+            const desc = document.getElementById('image-description').value;
+            if (desc) formData.append('problem_description', desc);
 
-            const list = document.createElement('div'); list.className = 'methods';
-            suggested.forEach(m => {
-                const btn = document.createElement('button'); btn.className = 'method-btn'; btn.textContent = m;
-                btn.addEventListener('click', () => {
-                    document.querySelectorAll('.method-btn').forEach(x => x.classList.remove('active'));
-                    btn.classList.add('active'); selectedMethod = m; document.getElementById('solve-panel').style.display = 'block';
-                });
-                list.appendChild(btn);
-            });
-            methodsDiv.appendChild(list);
-
-            // Explanation for not applicable
-            if (Object.keys(notApp).length) {
-                const explTitle = document.createElement('div'); explTitle.style.color = 'var(--muted)'; explTitle.style.marginTop = '0.6rem'; explTitle.textContent = 'Métodos no aplicables (razón)';
-                methodsDiv.appendChild(explTitle);
-                const ul = document.createElement('ul'); ul.style.color = 'var(--muted)';
-                for (const k in notApp) {
-                    const li = document.createElement('li'); li.textContent = `${k}: ${notApp[k]}`; ul.appendChild(li);
+            try {
+                showMessage('Analizando imagen...', 'processing');
+                const resp = await fetch(`${apiBase}/analyze/analyze-image`, { method: 'POST', body: formData });
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    showMessage(err.detail || 'Error al analizar imagen', 'error');
+                    return;
                 }
-                methodsDiv.appendChild(ul);
+                const json = await resp.json();
+                handleAnalysisResponse(json);
+            } catch (e) {
+                showMessage(`Error: ${e.message}`, 'error');
             }
         }
 
-        document.getElementById('text-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const problem = e.target.problem.value;
-            const payload = { problem: problem };
-            const resp = await fetch(`${apiBase}/analyze/`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            const json = await resp.json();
-            await handleAnalysisResponse(json);
-        });
-
-        document.getElementById('image-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(e.target);
-            const resp = await fetch(`${apiBase}/analyze/analyze-image`, { method: 'POST', body: formData });
-            const json = await resp.json();
-            await handleAnalysisResponse(json);
-        });
-
-        document.getElementById('run-solve').addEventListener('click', async () => {
-            if (!lastAnalysis) { alert('No hay análisis previo'); return; }
-            if (!selectedMethod) { alert('Selecciona un método'); return; }
-
-            // Prepare model payload
-            const model = lastAnalysis.mathematical_model || lastAnalysis.result && lastAnalysis.result.mathematical_model;
-            if (!model) { alert('No se encontró modelo matemático en el análisis'); return; }
-
-            const payload = { model: model, method: selectedMethod };
-            const resp = await fetch(`${apiBase}/analyze/solve`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            const json = await resp.json();
-            // mostrar resultado de la resolución
-            if (json && json.result) {
-                renderResult(json.result);
-            } else {
-                renderResult(json);
+        async function analyze(payload) {
+            try {
+                showMessage('Analizando problema...', 'processing');
+                const resp = await fetch(`${apiBase}/analyze/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    showMessage(err.detail || 'Error en análisis', 'error');
+                    return;
+                }
+                const json = await resp.json();
+                handleAnalysisResponse(json);
+            } catch (e) {
+                showMessage(`Error: ${e.message}`, 'error');
             }
-        });
+        }
+
+        function handleAnalysisResponse(json) {
+            lastAnalysis = json;
+            showMessage('✓ Análisis completado', 'success');
+
+            // Mostrar modelo
+            const model = json.mathematical_model || (json.result && json.result.mathematical_model);
+            if (model) {
+                displayModel(model);
+            }
+
+            // Mostrar métodos
+            const suggested = json.suggested_methods || (json.result && json.result.suggested_methods) || [];
+            const notApplicable = json.methods_not_applicable || (json.result && json.result.methods_not_applicable) || {};
+
+            const methodsContainer = document.getElementById('methods-container');
+            methodsContainer.innerHTML = '';
+
+            if (suggested.length > 0) {
+                const btnGroup = document.createElement('div');
+                btnGroup.className = 'btn-group';
+                suggested.forEach(m => {
+                    const btn = document.createElement('button');
+                    btn.className = 'method-btn';
+                    btn.textContent = m.charAt(0).toUpperCase() + m.slice(1);
+                    btn.onclick = () => selectMethod(m, btn);
+                    btnGroup.appendChild(btn);
+                });
+                methodsContainer.appendChild(btnGroup);
+            }
+
+            if (Object.keys(notApplicable).length > 0) {
+                const notAppDiv = document.createElement('div');
+                notAppDiv.className = 'no-applicable';
+                const title = document.createElement('div');
+                title.className = 'no-applicable-title';
+                title.textContent = '✗ Métodos no aplicables:';
+                notAppDiv.appendChild(title);
+                for (const [method, reason] of Object.entries(notApplicable)) {
+                    const item = document.createElement('div');
+                    item.className = 'no-applicable-item';
+                    item.textContent = `${method}: ${reason}`;
+                    notAppDiv.appendChild(item);
+                }
+                document.getElementById('not-applicable-methods').innerHTML = '';
+                document.getElementById('not-applicable-methods').appendChild(notAppDiv);
+            }
+
+            document.getElementById('solve-btn').style.display = 'none';
+        }
+
+        function selectMethod(method, btnElement) {
+            selectedMethod = method;
+            document.querySelectorAll('.method-btn').forEach(b => b.classList.remove('active'));
+            btnElement.classList.add('active');
+            document.getElementById('solve-btn').style.display = 'block';
+        }
+
+        function displayModel(model) {
+            const div = document.createElement('div');
+            div.className = 'model-display';
+
+            const title = document.createElement('div');
+            title.className = 'title';
+            title.textContent = (model.objective === 'min' ? '📉 Minimizar' : '📈 Maximizar');
+            div.appendChild(title);
+
+            const objLine = document.createElement('div');
+            objLine.className = 'objective-line';
+            objLine.textContent = model.objective_function;
+            div.appendChild(objLine);
+
+            if (model.constraints && model.constraints.length > 0) {
+                const consTitle = document.createElement('div');
+                consTitle.style.fontWeight = '600';
+                consTitle.style.color = '#1a1a1a';
+                consTitle.style.marginTop = '1rem';
+                consTitle.textContent = 'Sujeto a:';
+                div.appendChild(consTitle);
+
+                const consList = document.createElement('div');
+                consList.className = 'constraints-list';
+                model.constraints.forEach(c => {
+                    const item = document.createElement('div');
+                    item.className = 'constraint-item';
+                    item.textContent = c;
+                    consList.appendChild(item);
+                });
+                div.appendChild(consList);
+            }
+
+            document.getElementById('model-display').innerHTML = '';
+            document.getElementById('model-display').appendChild(div);
+        }
+
+        async function solveProblem() {
+            if (!lastAnalysis) {
+                showMessage('Por favor analiza un problema primero', 'error');
+                return;
+            }
+            if (!selectedMethod) {
+                showMessage('Por favor selecciona un método', 'error');
+                return;
+            }
+
+            const model = lastAnalysis.mathematical_model || (lastAnalysis.result && lastAnalysis.result.mathematical_model);
+            if (!model) {
+                showMessage('Error: no se encontró el modelo', 'error');
+                return;
+            }
+
+            try {
+                showMessage('Resolviendo...', 'processing');
+                const payload = { model, method: selectedMethod };
+                const resp = await fetch(`${apiBase}/analyze/solve`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    showMessage(err.detail || 'Error al resolver', 'error');
+                    return;
+                }
+
+                const json = await resp.json();
+                if (json.result) {
+                    displaySolution(json.result);
+                    showMessage('✓ Problema resuelto exitosamente', 'success');
+                }
+            } catch (e) {
+                showMessage(`Error: ${e.message}`, 'error');
+            }
+        }
+
+        function displaySolution(result) {
+            console.log('displaySolution called with result:', result);
+            document.getElementById('solution-section').style.display = 'block';
+            const content = document.getElementById('solution-content');
+            content.innerHTML = '';
+
+            // Método
+            const methodDiv = document.createElement('div');
+            methodDiv.style.marginBottom = '1.5rem';
+            const methodLabel = document.createElement('div');
+            methodLabel.style.fontSize = '0.9rem';
+            methodLabel.style.color = '#0066cc';
+            methodLabel.style.fontWeight = '600';
+            methodLabel.style.marginBottom = '0.3rem';
+            methodLabel.textContent = 'MÉTODO USADO';
+            methodDiv.appendChild(methodLabel);
+            const methodName = document.createElement('div');
+            methodName.style.fontSize = '1.4rem';
+            methodName.style.fontWeight = '700';
+            methodName.style.color = '#1a1a1a';
+            methodName.textContent = result.method ? result.method.toUpperCase() : 'RESULTADO';
+            methodDiv.appendChild(methodName);
+            content.appendChild(methodDiv);
+
+            // Objetivo
+            if (result.objective_value !== undefined) {
+                const objDiv = document.createElement('div');
+                objDiv.className = 'result-card';
+                const label = document.createElement('div');
+                label.className = 'result-label';
+                label.textContent = 'Valor Óptimo';
+                objDiv.appendChild(label);
+                const val = document.createElement('div');
+                val.className = 'result-value';
+                val.textContent = result.objective_value.toFixed(6);
+                objDiv.appendChild(val);
+                content.appendChild(objDiv);
+                console.log('Rendered objective value:', result.objective_value);
+            } else {
+                console.warn('No objective_value in result');
+            }
+
+            // Si es método gráfico, intentar dibujar la gráfica YA (antes de evaluar vértices)
+            if (result.method === 'graphical') {
+                try {
+                    const model = lastAnalysis?.mathematical_model || result.mathematical_model || null;
+                    // draw plot before rendering steps/vertices so it appears above
+                    plotGraphicalSolution(result, model);
+                } catch (e) {
+                    console.warn('Error dibujando gráfica inicial:', e);
+                }
+            }
+
+            // Variables
+            if (result.variables && Object.keys(result.variables).length > 0) {
+                const varTitle = document.createElement('div');
+                varTitle.className = 'section-title';
+                varTitle.textContent = 'Valores de Variables';
+                content.appendChild(varTitle);
+
+                const varGrid = document.createElement('div');
+                varGrid.className = 'variables-grid';
+                for (const [name, value] of Object.entries(result.variables)) {
+                    const item = document.createElement('div');
+                    item.className = 'var-item';
+                    const nameDiv = document.createElement('div');
+                    nameDiv.className = 'var-name';
+                    nameDiv.textContent = name;
+                    item.appendChild(nameDiv);
+                    const valDiv = document.createElement('div');
+                    valDiv.className = 'var-value';
+                    valDiv.textContent = Number(value).toFixed(6);
+                    item.appendChild(valDiv);
+                    varGrid.appendChild(item);
+                }
+                content.appendChild(varGrid);
+            } else {
+                console.warn('No variables in result');
+            }
+
+            // Explicación
+            if (result.explanation) {
+                const exTitle = document.createElement('div');
+                exTitle.className = 'section-title';
+                exTitle.textContent = 'Procedimiento Aplicado';
+                content.appendChild(exTitle);
+
+                const exDiv = document.createElement('div');
+                exDiv.className = 'method-explanation';
+                exDiv.textContent = result.explanation;
+                content.appendChild(exDiv);
+            }
+
+            // Pasos - renderizado diferente según el método
+            if (result.steps && result.steps.length > 0) {
+                const stepsTitle = document.createElement('div');
+                stepsTitle.className = 'section-title';
+                stepsTitle.textContent = `Evaluación de Vértices (${result.steps.length})`;
+                content.appendChild(stepsTitle);
+
+                const stepsContainer = document.createElement('div');
+
+                // Para método gráfico, mostrar de forma simplificada
+                if (result.method === 'graphical') {
+                    result.steps.forEach(step => {
+                        const stepCard = document.createElement('div');
+                        stepCard.className = 'step-iteration';
+                        stepCard.style.marginBottom = '1rem';
+                        stepCard.style.padding = '1rem';
+                        stepCard.style.border = '1px solid #ddd';
+                        stepCard.style.borderRadius = '8px';
+                        stepCard.style.backgroundColor = step.is_optimal ? '#f0fff0' : '#ffffff';
+
+                        const header = document.createElement('div');
+                        header.style.fontWeight = '600';
+                        header.style.marginBottom = '0.5rem';
+                        header.style.color = step.is_optimal ? '#008000' : '#0066cc';
+                        header.innerHTML = `
+                            Vértice ${step.iteration}: (${step.point[0].toFixed(4)}, ${step.point[1].toFixed(4)})
+                            ${step.is_optimal ? '<strong style="color: #ff6b35;"> ⭐ ÓPTIMO</strong>' : ''}
+                        `;
+                        stepCard.appendChild(header);
+
+                        const value = document.createElement('div');
+                        value.style.fontSize = '0.95rem';
+                        value.textContent = `Valor Objetivo: ${step.objective_value.toFixed(6)}`;
+                        stepCard.appendChild(value);
+
+                        stepsContainer.appendChild(stepCard);
+                    });
+                } else {
+                    // Para Simplex y otros métodos, mostrar tablas detalladas
+                    result.steps.forEach(step => {
+                        const stepCard = document.createElement('div');
+                        stepCard.className = 'step-iteration';
+                        stepCard.style.marginBottom = '2rem';
+                        stepCard.style.padding = '1.5rem';
+                        stepCard.style.border = '1px solid #ddd';
+                        stepCard.style.borderRadius = '8px';
+
+                        // Encabezado de iteración
+                        const header = document.createElement('div');
+                        header.className = 'step-header';
+                        header.style.fontSize = '1.1rem';
+                        header.style.fontWeight = '700';
+                        header.style.marginBottom = '1rem';
+                        header.style.color = '#0066cc';
+                        header.textContent = `Iteración ${step.iteration}`;
+                        stepCard.appendChild(header);
+
+                        // Info de pivote
+                        if (step.entering_variable && step.leaving_variable) {
+                            const pivotInfo = document.createElement('div');
+                            pivotInfo.style.marginBottom = '1rem';
+                            pivotInfo.style.padding = '0.8rem';
+                            pivotInfo.style.backgroundColor = '#f0f4ff';
+                            pivotInfo.style.borderRadius = '6px';
+                            pivotInfo.innerHTML = `
+                                <div style="font-weight: 600; margin-bottom: 0.3rem;">Operación Pivote</div>
+                                <div>Variable Entrante: <strong>${step.entering_variable}</strong></div>
+                                <div>Variable Saliente: <strong>${step.leaving_variable}</strong></div>
+                                <div>Elemento Pivote: <strong>${step.pivot_element.toFixed(4)}</strong></div>
+                                <div>Fila Pivote: ${step.leaving_row}, Columna Pivote: ${step.entering_col}</div>
+                            `;
+                            stepCard.appendChild(pivotInfo);
+                        }
+
+                        // Tabla ANTES
+                        if (step.tableau_before) {
+                            const beforeTitle = document.createElement('div');
+                            beforeTitle.style.fontWeight = '600';
+                            beforeTitle.style.marginTop = '1rem';
+                            beforeTitle.style.marginBottom = '0.5rem';
+                            beforeTitle.textContent = 'Tabla Antes del Pivote:';
+                            stepCard.appendChild(beforeTitle);
+
+                            const beforeTable = document.createElement('table');
+                            beforeTable.style.width = '100%';
+                            beforeTable.style.borderCollapse = 'collapse';
+                            beforeTable.style.fontSize = '0.85rem';
+                            beforeTable.style.marginBottom = '1rem';
+                            beforeTable.style.overflowX = 'auto';
+                            beforeTable.style.display = 'block';
+
+                            // Headers
+                            const thead = document.createElement('thead');
+                            const headerRow = document.createElement('tr');
+                            headerRow.style.backgroundColor = '#f5f5f5';
+
+                            const baseHeader = document.createElement('th');
+                            baseHeader.textContent = 'Base';
+                            baseHeader.style.padding = '0.4rem';
+                            baseHeader.style.border = '1px solid #ddd';
+                            baseHeader.style.textAlign = 'left';
+                            headerRow.appendChild(baseHeader);
+
+                            if (step.var_names) {
+                                step.var_names.forEach(v => {
+                                    const th = document.createElement('th');
+                                    th.textContent = v;
+                                    th.style.padding = '0.4rem';
+                                    th.style.border = '1px solid #ddd';
+                                    th.style.textAlign = 'center';
+                                    th.style.fontWeight = '600';
+                                    headerRow.appendChild(th);
+                                });
+                            }
+
+                            // Slack variables headers
+                            for (let i = 0; i < step.tableau_before[0].length - step.var_names.length - 1; i++) {
+                                const th = document.createElement('th');
+                                th.textContent = `s${i + 1}`;
+                                th.style.padding = '0.4rem';
+                                th.style.border = '1px solid #ddd';
+                                th.style.textAlign = 'center';
+                                th.style.fontWeight = '600';
+                                headerRow.appendChild(th);
+                            }
+
+                            const rhsHeader = document.createElement('th');
+                            rhsHeader.textContent = 'RHS';
+                            rhsHeader.style.padding = '0.4rem';
+                            rhsHeader.style.border = '1px solid #ddd';
+                            rhsHeader.style.textAlign = 'center';
+                            rhsHeader.style.fontWeight = '600';
+                            headerRow.appendChild(rhsHeader);
+
+                            thead.appendChild(headerRow);
+                            beforeTable.appendChild(thead);
+
+                            // Body
+                            const tbody = document.createElement('tbody');
+                            step.tableau_before.forEach((row, rowIdx) => {
+                                const tr = document.createElement('tr');
+                                tr.style.backgroundColor = rowIdx === step.leaving_row ? '#ffe0e0' : '#ffffff';
+
+                                const baseCell = document.createElement('td');
+                                baseCell.textContent = step.basis_before[rowIdx];
+                                baseCell.style.padding = '0.4rem';
+                                baseCell.style.border = '1px solid #ddd';
+                                baseCell.style.fontWeight = '600';
+                                tr.appendChild(baseCell);
+
+                                row.forEach((val, colIdx) => {
+                                    const td = document.createElement('td');
+                                    td.textContent = val.toFixed(4);
+                                    td.style.padding = '0.4rem';
+                                    td.style.border = '1px solid #ddd';
+                                    td.style.textAlign = 'center';
+                                    if (rowIdx === step.leaving_row && colIdx === step.entering_col) {
+                                        td.style.backgroundColor = '#ffcc00';
+                                        td.style.fontWeight = '700';
+                                    }
+                                    tr.appendChild(td);
+                                });
+                                tbody.appendChild(tr);
+                            });
+
+                            // Fila de objetivo
+                            const objRow = document.createElement('tr');
+                            objRow.style.backgroundColor = '#e0e0ff';
+                            const objLabel = document.createElement('td');
+                            objLabel.textContent = 'Z';
+                            objLabel.style.padding = '0.4rem';
+                            objLabel.style.border = '1px solid #ddd';
+                            objLabel.style.fontWeight = '600';
+                            objRow.appendChild(objLabel);
+                            step.obj_row_before.forEach((val, idx) => {
+                                const td = document.createElement('td');
+                                td.textContent = val.toFixed(4);
+                                td.style.padding = '0.4rem';
+                                td.style.border = '1px solid #ddd';
+                                td.style.textAlign = 'center';
+                                if (idx === step.entering_col) {
+                                    td.style.backgroundColor = '#ffff99';
+                                    td.style.fontWeight = '700';
+                                }
+                                objRow.appendChild(td);
+                            });
+                            tbody.appendChild(objRow);
+
+                            beforeTable.appendChild(tbody);
+                            stepCard.appendChild(beforeTable);
+                        }
+
+                        // Tabla DESPUÉS
+                        if (step.tableau_after) {
+                            const afterTitle = document.createElement('div');
+                            afterTitle.style.fontWeight = '600';
+                            afterTitle.style.marginTop = '1rem';
+                            afterTitle.style.marginBottom = '0.5rem';
+                            afterTitle.textContent = 'Tabla Después del Pivote:';
+                            stepCard.appendChild(afterTitle);
+
+                            const afterTable = document.createElement('table');
+                            afterTable.style.width = '100%';
+                            afterTable.style.borderCollapse = 'collapse';
+                            afterTable.style.fontSize = '0.85rem';
+                            afterTable.style.display = 'block';
+                            afterTable.style.overflowX = 'auto';
+
+                            // Headers
+                            const thead = document.createElement('thead');
+                            const headerRow = document.createElement('tr');
+                            headerRow.style.backgroundColor = '#f5f5f5';
+
+                            const baseHeader = document.createElement('th');
+                            baseHeader.textContent = 'Base';
+                            baseHeader.style.padding = '0.4rem';
+                            baseHeader.style.border = '1px solid #ddd';
+                            baseHeader.style.textAlign = 'left';
+                            headerRow.appendChild(baseHeader);
+
+                            if (step.var_names) {
+                                step.var_names.forEach(v => {
+                                    const th = document.createElement('th');
+                                    th.textContent = v;
+                                    th.style.padding = '0.4rem';
+                                    th.style.border = '1px solid #ddd';
+                                    th.style.textAlign = 'center';
+                                    th.style.fontWeight = '600';
+                                    headerRow.appendChild(th);
+                                });
+                            }
+
+                            for (let i = 0; i < step.tableau_after[0].length - step.var_names.length - 1; i++) {
+                                const th = document.createElement('th');
+                                th.textContent = `s${i + 1}`;
+                                th.style.padding = '0.4rem';
+                                th.style.border = '1px solid #ddd';
+                                th.style.textAlign = 'center';
+                                th.style.fontWeight = '600';
+                                headerRow.appendChild(th);
+                            }
+
+                            const rhsHeader = document.createElement('th');
+                            rhsHeader.textContent = 'RHS';
+                            rhsHeader.style.padding = '0.4rem';
+                            rhsHeader.style.border = '1px solid #ddd';
+                            rhsHeader.style.textAlign = 'center';
+                            rhsHeader.style.fontWeight = '600';
+                            headerRow.appendChild(rhsHeader);
+
+                            thead.appendChild(headerRow);
+                            afterTable.appendChild(thead);
+
+                            // Body
+                            const tbody = document.createElement('tbody');
+                            step.tableau_after.forEach((row, rowIdx) => {
+                                const tr = document.createElement('tr');
+                                tr.style.backgroundColor = '#ffffff';
+
+                                const baseCell = document.createElement('td');
+                                baseCell.textContent = step.basis_after[rowIdx];
+                                baseCell.style.padding = '0.4rem';
+                                baseCell.style.border = '1px solid #ddd';
+                                baseCell.style.fontWeight = '600';
+                                tr.appendChild(baseCell);
+
+                                row.forEach((val, colIdx) => {
+                                    const td = document.createElement('td');
+                                    td.textContent = val.toFixed(4);
+                                    td.style.padding = '0.4rem';
+                                    td.style.border = '1px solid #ddd';
+                                    td.style.textAlign = 'center';
+                                    tr.appendChild(td);
+                                });
+                                tbody.appendChild(tr);
+                            });
+
+                            // Fila de objetivo
+                            const objRow = document.createElement('tr');
+                            objRow.style.backgroundColor = '#e0e0ff';
+                            const objLabel = document.createElement('td');
+                            objLabel.textContent = 'Z';
+                            objLabel.style.padding = '0.4rem';
+                            objLabel.style.border = '1px solid #ddd';
+                            objLabel.style.fontWeight = '600';
+                            objRow.appendChild(objLabel);
+                            step.obj_row_after.forEach((val, idx) => {
+                                const td = document.createElement('td');
+                                td.textContent = val.toFixed(4);
+                                td.style.padding = '0.4rem';
+                                td.style.border = '1px solid #ddd';
+                                td.style.textAlign = 'center';
+                                objRow.appendChild(td);
+                            });
+                            tbody.appendChild(objRow);
+
+                            afterTable.appendChild(tbody);
+                            stepCard.appendChild(afterTable);
+                        }
+
+                        stepsContainer.appendChild(stepCard);
+                    });
+                }
+
+                content.appendChild(stepsContainer);
+            }
+
+            // Puntos factibles
+            if (result.feasible_points && result.feasible_points.length > 0) {
+                const pTitle = document.createElement('div');
+                pTitle.className = 'section-title';
+                pTitle.textContent = `Evaluación de Vértices (${result.feasible_points.length} vértices)`;
+                content.appendChild(pTitle);
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'table-wrapper';
+                const table = document.createElement('table');
+
+                const thead = document.createElement('thead');
+                const headerRow = document.createElement('tr');
+                ['Vértice', 'Coordenada X', 'Coordenada Y', 'Valor Objetivo', 'Estado'].forEach(h => {
+                    const th = document.createElement('th');
+                    th.textContent = h;
+                    headerRow.appendChild(th);
+                });
+                thead.appendChild(headerRow);
+                table.appendChild(thead);
+
+                const tbody = document.createElement('tbody');
+                result.feasible_points.forEach((pt, idx) => {
+                    const tr = document.createElement('tr');
+                    const isOptimal = pt.is_optimal || (result.optimal_point &&
+                        result.optimal_point[0] === pt.point[0] &&
+                        result.optimal_point[1] === pt.point[1]);
+
+                    if (isOptimal) {
+                        tr.style.background = '#f0fff0';
+                        tr.style.fontWeight = '600';
+                    }
+
+                    // Vértice número
+                    const numCell = document.createElement('td');
+                    numCell.textContent = `V${idx + 1}`;
+                    tr.appendChild(numCell);
+
+                    // Coordenada X
+                    const xCell = document.createElement('td');
+                    xCell.textContent = Number(pt.point[0]).toFixed(4);
+                    tr.appendChild(xCell);
+
+                    // Coordenada Y
+                    const yCell = document.createElement('td');
+                    yCell.textContent = Number(pt.point[1]).toFixed(4);
+                    tr.appendChild(yCell);
+
+                    // Valor Objetivo
+                    const objCell = document.createElement('td');
+                    objCell.textContent = Number(pt.objective).toFixed(6);
+                    objCell.style.fontFamily = 'monospace';
+                    tr.appendChild(objCell);
+
+                    // Estado
+                    const statusCell = document.createElement('td');
+                    statusCell.textContent = isOptimal ? '⭐ ÓPTIMO' : 'Factible';
+                    statusCell.style.color = isOptimal ? '#008000' : '#666';
+                    statusCell.style.fontWeight = isOptimal ? '700' : '400';
+                    tr.appendChild(statusCell);
+
+                    tbody.appendChild(tr);
+                });
+                table.appendChild(tbody);
+                wrapper.appendChild(table);
+                content.appendChild(wrapper);
+            }
+
+            // Sensibilidad
+            if (result.sensitivity) {
+                const senTitle = document.createElement('div');
+                senTitle.className = 'section-title';
+                senTitle.textContent = 'Análisis de Sensibilidad';
+                content.appendChild(senTitle);
+
+                const senDiv = document.createElement('div');
+                senDiv.className = 'sensitivity-section';
+
+                if (result.sensitivity.dual_prices && result.sensitivity.dual_prices.length > 0) {
+                    const dp = document.createElement('div');
+                    dp.className = 'sensitivity-title';
+                    dp.textContent = 'Precios Sombra:';
+                    senDiv.appendChild(dp);
+                    const dpList = document.createElement('div');
+                    dpList.style.marginBottom = '0.8rem';
+                    dpList.textContent = result.sensitivity.dual_prices.map(v => v.toFixed(4)).join(', ');
+                    senDiv.appendChild(dpList);
+                }
+
+                if (result.sensitivity.reduced_costs) {
+                    const rc = document.createElement('div');
+                    rc.className = 'sensitivity-title';
+                    rc.textContent = 'Costos Reducidos:';
+                    senDiv.appendChild(rc);
+                    const rcList = document.createElement('div');
+                    rcList.textContent = Object.entries(result.sensitivity.reduced_costs)
+                        .map(([k, v]) => `${k}: ${Number(v).toFixed(4)}`)
+                        .join(', ');
+                    senDiv.appendChild(rcList);
+                }
+
+                if (result.sensitivity.note) {
+                    const note = document.createElement('div');
+                    note.style.marginTop = '0.8rem';
+                    note.style.fontSize = '0.85rem';
+                    note.style.color = '#666';
+                    note.style.fontStyle = 'italic';
+                    note.textContent = result.sensitivity.note;
+                    senDiv.appendChild(note);
+                }
+
+                content.appendChild(senDiv);
+            }
+
+            // Si es método gráfico, mostrar gráfica
+            if (result.method === 'graphical') {
+                // Obtener modelo del análisis guardado
+                const model = lastAnalysis?.mathematical_model;
+                plotGraphicalSolution(result, model);
+            }
+        }
+
+        function showMessage(text, type) {
+            const msgDiv = document.getElementById('message');
+            msgDiv.className = `message ${type}`;
+            if (type === 'processing') {
+                msgDiv.innerHTML = `<span class="spinner"></span>${text}`;
+            } else {
+                msgDiv.textContent = text;
+            }
+        }
+
+        function plotGraphicalSolution(result, model) {
+            try {
+                console.log('plotGraphicalSolution called with', result.feasible_points?.length, 'points');
+                const existing = document.getElementById('graphical-plot');
+                if (existing) existing.remove();
+
+                if (!result || !result.feasible_points || result.feasible_points.length === 0) {
+                    return;
+                }
+
+                // Normalize feasible points to arrays [x,y]
+                const pts = result.feasible_points.map(p => Array.isArray(p.point) ? p.point.map(Number) : [Number(p.point[0]), Number(p.point[1])]);
+
+                // Calculate bounds from feasible points
+                const xCoords = pts.map(p => p[0]);
+                const yCoords = pts.map(p => p[1]);
+                let xMin = Math.min(...xCoords);
+                let xMax = Math.max(...xCoords);
+                let yMin = Math.min(...yCoords);
+                let yMax = Math.max(...yCoords);
+
+                // Ensure numeric bounds and add padding
+                if (!isFinite(xMin) || !isFinite(xMax)) { xMin = -5; xMax = 5; }
+                if (!isFinite(yMin) || !isFinite(yMax)) { yMin = -5; yMax = 5; }
+
+                const xRange = xMax - xMin || 1;
+                const yRange = yMax - yMin || 1;
+                const xPad = xRange * 0.2;
+                const yPad = yRange * 0.2;
+                xMin -= xPad; xMax += xPad;
+                yMin -= yPad; yMax += yPad;
+
+                const traces = [];
+
+                // If polygon (>=3 vertices) draw filled feasible region as a trace (ordered by angle)
+                if (pts.length >= 3) {
+                    const center = { x: xCoords.reduce((a, b) => a + b, 0) / xCoords.length, y: yCoords.reduce((a, b) => a + b, 0) / yCoords.length };
+                    const angles = pts.map((p, i) => ({ idx: i, angle: Math.atan2(p[1] - center.y, p[0] - center.x) }))
+                        .sort((a, b) => a.angle - b.angle);
+                    const polyX = angles.map(a => pts[a.idx][0]);
+                    const polyY = angles.map(a => pts[a.idx][1]);
+                    // Close polygon
+                    polyX.push(polyX[0]); polyY.push(polyY[0]);
+
+                    traces.push({
+                        x: polyX,
+                        y: polyY,
+                        mode: 'lines',
+                        name: 'Región Factible',
+                        fill: 'toself',
+                        fillcolor: 'rgba(100,200,255,0.25)',
+                        line: { color: 'rgba(0,100,200,0.7)', width: 2.5 },
+                        hoverinfo: 'none',
+                        opacity: 0.6
+                    });
+                }
+
+                // Draw constraint lines (if provided)
+                if (result.constraints_info && result.constraints_info.length > 0) {
+                    result.constraints_info.forEach((constraintData, idx) => {
+                        try {
+                            const a = Number(constraintData.a) || 0;
+                            const b = Number(constraintData.b) || 0;
+                            const rhs = Number(constraintData.rhs) || 0;
+                            const op = constraintData.operator || '<=';
+
+                            // Build line across x-range; if b==0 draw vertical line at x = rhs/a
+                            if (Math.abs(b) > 1e-12) {
+                                const xLine = [];
+                                const yLine = [];
+                                const steps = 300;
+                                const step = (xMax - xMin) / steps;
+                                for (let x = xMin; x <= xMax + 1e-9; x += step) {
+                                    const y = (rhs - a * x) / b;
+                                    xLine.push(x);
+                                    yLine.push(y);
+                                }
+                                let lineColor = '#666666';
+                                let dashStyle = 'solid';
+                                if (op === '<=') { lineColor = '#0066cc'; dashStyle = 'solid'; }
+                                else if (op === '>=') { lineColor = '#cc6600'; dashStyle = 'dash'; }
+                                else if (op === '=') { lineColor = '#009900'; dashStyle = 'dot'; }
+
+                                traces.push({
+                                    x: xLine,
+                                    y: yLine,
+                                    mode: 'lines',
+                                    name: `Restricción ${idx + 1}: ${constraintData.constraint || ''}`,
+                                    line: { width: 2, color: lineColor, dash: dashStyle },
+                                    hoverinfo: 'name'
+                                });
+                            } else if (Math.abs(a) > 1e-12) {
+                                // vertical line x = rhs / a
+                                const xv = rhs / a;
+                                traces.push({
+                                    x: [xv, xv],
+                                    y: [yMin - 10 * yPad, yMax + 10 * yPad],
+                                    mode: 'lines',
+                                    name: `Restricción ${idx + 1}: ${constraintData.constraint || ''}`,
+                                    line: { width: 2, color: '#9966cc', dash: 'dash' },
+                                    hoverinfo: 'name'
+                                });
+                            }
+                        } catch (e) {
+                            console.warn('Error plotting constraint:', e);
+                        }
+                    });
+                }
+
+                // Objective level curves (if coefficients given)
+                if (result.objective_coefficients && result.objective_value !== undefined) {
+                    const keys = Object.keys(result.objective_coefficients);
+                    const c1 = Number(result.objective_coefficients[keys[0]]) || 1;
+                    const c2 = Number(result.objective_coefficients[keys[1]]) || 1;
+                    if (Math.abs(c2) > 1e-12) {
+                        const zValues = [
+                            result.objective_value * 0.3,
+                            result.objective_value * 0.7,
+                            result.objective_value,
+                            result.objective_value * 1.3
+                        ];
+                        zValues.forEach((z, idx) => {
+                            const xO = [];
+                            const yO = [];
+                            const steps = 300;
+                            const step = (xMax - xMin) / steps;
+                            for (let x = xMin; x <= xMax + 1e-9; x += step) {
+                                yO.push((z - c1 * x) / c2);
+                                xO.push(x);
+                            }
+                            const isOpt = (idx === 2);
+                            traces.push({
+                                x: xO,
+                                y: yO,
+                                mode: 'lines',
+                                name: isOpt ? `Función Objetivo (Z=${result.objective_value.toFixed(2)})` : `Nivel Z=${z.toFixed(2)}`,
+                                line: { width: isOpt ? 3.5 : 1.5, color: isOpt ? '#ff6b35' : '#ffcc99', dash: isOpt ? 'solid' : 'dash' },
+                                opacity: isOpt ? 1 : 0.6,
+                                hoverinfo: 'name'
+                            });
+                        });
+                    }
+                }
+
+                // Vertices trace
+                traces.push({
+                    x: pts.map(p => p[0]),
+                    y: pts.map(p => p[1]),
+                    mode: 'markers+text',
+                    name: 'Vértices Factibles',
+                    marker: { size: 9, color: '#0066cc', line: { color: '#003366', width: 2 } },
+                    text: pts.map((p, i) => `V${i + 1}<br>(${p[0].toFixed(2)}, ${p[1].toFixed(2)})`),
+                    textposition: 'top center',
+                    textfont: { size: 10 },
+                    hoverinfo: 'text'
+                });
+
+                // Optimal point
+                if (result.optimal_point) {
+                    const op = Array.isArray(result.optimal_point) ? result.optimal_point.map(Number) : [Number(result.optimal_point[0]), Number(result.optimal_point[1])];
+                    traces.push({
+                        x: [op[0]],
+                        y: [op[1]],
+                        mode: 'markers+text',
+                        name: 'Óptimo',
+                        marker: { size: 18, color: '#ff6b35', symbol: 'star', line: { color: '#cc3300', width: 3 } },
+                        text: `ÓPTIMO<br>(${op[0].toFixed(3)}, ${op[1].toFixed(3)})<br>Z=${Number(result.objective_value).toFixed(3)}`,
+                        textposition: 'bottom center',
+                        textfont: { size: 12, color: '#ff6b35' },
+                        hoverinfo: 'text'
+                    });
+                }
+
+                // Create container
+                const containerId = 'graphical-plot';
+                const graphContainer = document.createElement('div');
+                graphContainer.id = containerId;
+                graphContainer.style.width = '100%';
+                graphContainer.style.height = '550px';
+                graphContainer.style.marginBottom = '1.5rem';
+                graphContainer.style.marginTop = '1.5rem';
+                graphContainer.style.border = '2px solid #ddd';
+                graphContainer.style.borderRadius = '8px';
+                graphContainer.style.display = 'block';
+                graphContainer.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                document.getElementById('solution-content').insertBefore(graphContainer, document.getElementById('solution-content').firstChild);
+
+                const layout = {
+                    title: { text: '<b>Visualización del Método Gráfico</b>', font: { size: 18, color: '#333' } },
+                    xaxis: { title: '<b>X₁</b>', range: [xMin, xMax], zeroline: true, showgrid: true, gridcolor: 'rgba(200,200,200,0.3)' },
+                    yaxis: { title: '<b>X₂</b>', range: [yMin, yMax], zeroline: true, showgrid: true, gridcolor: 'rgba(200,200,200,0.3)' },
+                    hovermode: 'closest',
+                    showlegend: true,
+                    legend: { x: 0.02, y: 0.98, bgcolor: 'rgba(255,255,255,0.8)', bordercolor: '#ddd', borderwidth: 1 },
+                    plot_bgcolor: '#fafafa',
+                    paper_bgcolor: '#ffffff',
+                    margin: { l: 70, r: 50, t: 70, b: 70 },
+                    autosize: true
+                };
+
+                if (window.Plotly) {
+                    try {
+                        Plotly.newPlot(containerId, traces, layout, { responsive: true, displayModeBar: true });
+                    } catch (err) {
+                        console.error('Plotly draw error:', err);
+                        const el = document.getElementById(containerId);
+                        if (el) el.remove();
+                    }
+                } else {
+                    console.error('Plotly not available');
+                    const el = document.getElementById(containerId);
+                    if (el) el.remove();
+                }
+
+            } catch (error) {
+                console.error('Error en plotGraphicalSolution:', error);
+                const el = document.getElementById('graphical-plot');
+                if (el) el.remove();
+            }
+        }
     </script>
 </body>
 

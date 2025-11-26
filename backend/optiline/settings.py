@@ -77,3 +77,4 @@ PROJECT_NAME = 'Suite Optimizacion Lineal'
 GROQ_MODEL = os.getenv('GROQ_MODEL', 'openai/gpt-oss-20b')
 GROQ_API_KEY = os.getenv('GROQ_API_KEY', '')
 GROQ_VISION_MODEL = os.getenv('GROQ_VISION_MODEL', 'llama-3.2-11b-vision-preview')
+GROQ_MODEL_FALLBACK = os.getenv('GROQ_MODEL_FALLBACK', 'openai/gpt-oss-20b')

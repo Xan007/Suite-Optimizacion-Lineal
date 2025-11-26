@@ -16,4 +16,5 @@ urlpatterns = [
     path(f'{API_PREFIX}/analyze/validate-model', views.validate_model, name='api-validate-model'),
     path(f'{API_PREFIX}/analyze/get-representations', views.get_representations, name='api-get-representations'),
     path(f'{API_PREFIX}/analyze/analyze-image', views.analyze_problem_from_image, name='api-analyze-image'),
+    path(f'{API_PREFIX}/analyze/solve', views.solve_model, name='api-solve'),
 ]
