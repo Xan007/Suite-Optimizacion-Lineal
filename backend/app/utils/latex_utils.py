@@ -8,7 +8,7 @@ from app.core.logger import logger
 
 
 def format_expression_to_latex(expr_str: str) -> str:
-    """Convierte una expresión matemática a formato LaTeX.
+    """Convierte expresión a LaTeX con subíndices numéricos para variables.
     
     Args:
         expr_str: Expresión en formato SymPy como string
@@ -18,7 +18,10 @@ def format_expression_to_latex(expr_str: str) -> str:
     """
     try:
         expr = sp.sympify(expr_str)
-        return sp.latex(expr)
+        latex_str = sp.latex(expr)
+        import re
+        latex_str = re.sub(r'([a-z])([0-9]+)', r'\1_{\2}', latex_str)
+        return latex_str
     except Exception as e:
         logger.warning(f"Error al convertir a LaTeX: {e}")
         return expr_str
@@ -49,15 +52,16 @@ def convert_constraint_to_latex(constraint_str: str) -> Optional[str]:
 
 
 def generate_nonnegative_latex_conditions(variables: Dict[str, str]) -> list:
-    """Genera condiciones de no-negatividad en formato LaTeX.
+    """Genera condiciones de no-negatividad en formato LaTeX con subíndices.
     
     Args:
         variables: Dict de variables del modelo
         
     Returns:
-        Lista con condiciones de no-negatividad en LaTeX
+        Lista con condiciones de no-negatividad en LaTeX (una sola vez, sin duplicación)
     """
     conditions = []
-    for var_name in variables.keys():
-        conditions.append(f"{var_name} \\geq 0")
+    for i, var_name in enumerate(variables.keys(), 1):
+        base_name = var_name.rstrip('0123456789')
+        conditions.append(f"{base_name}_{{{i}}} \\geq 0")
     return conditions

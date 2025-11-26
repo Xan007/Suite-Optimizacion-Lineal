@@ -44,7 +44,6 @@ ENVIRONMENT="local"
 ```powershell
 cd backend
 python manage.py migrate
-python manage.py runserver
 ```
 
 El servidor estará disponible en: `http://localhost:8000` y la interfaz básica en `/`.

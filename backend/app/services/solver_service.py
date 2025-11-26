@@ -80,6 +80,74 @@ class SolverService:
         """Filtra restricciones de no-negatividad."""
         return [c for c in constraints if not any(f"{v} >= 0" in c or f"{v}<= 0" in c for v in var_names)]
 
+    def _generate_equations_latex(self, structural_constraints: List[str], var_names: List[str], 
+                                  symbols: Dict[str, Any], A: np.ndarray, b: np.ndarray) -> str:
+        """Genera ecuaciones LaTeX con variables de holgura para cada restricción."""
+        equations = []
+        for i in range(len(b)):
+            var_terms = []
+            for j, var in enumerate(var_names):
+                coeff = float(A[i, j])
+                if abs(coeff) > self._TOL:
+                    coeff_str = f"{int(coeff)}" if coeff == int(coeff) else f"{coeff:.4g}"
+                    base_name = var.rstrip('0123456789')
+                    var_idx = j + 1
+                    var_sub = f"{base_name}_{{{var_idx}}}"
+                    if coeff == 1:
+                        var_terms.append(f"{var_sub}")
+                    elif coeff == -1:
+                        var_terms.append(f"-{var_sub}")
+                    elif coeff > 0:
+                        var_terms.append(f"{coeff_str}{var_sub}")
+                    else:
+                        var_terms.append(f"{coeff_str}{var_sub}")
+            
+            eq = var_terms[0] if var_terms else "0"
+            for term in var_terms[1:]:
+                eq += f" + {term}" if not term.startswith("-") else f" {term}"
+            
+            slack_name = f"s_{{{i+1}}}"
+            rhs = float(b[i])
+            
+            latex_eq = f"{eq} + {slack_name} = {int(rhs) if rhs == int(rhs) else f'{rhs:.4g}'}"
+            equations.append(f"\\[{latex_eq}\\]")
+        
+        return "\n".join(equations)
+
+    def _generate_equations_latex_graphical(self, structural_constraints: List[str], var_names: List[str],
+                                           symbols: Dict[str, Any], A: np.ndarray, b: np.ndarray) -> str:
+        """Genera ecuaciones LaTeX con variables de holgura para método gráfico."""
+        equations = []
+        for i in range(len(b)):
+            var_terms = []
+            for j, var in enumerate(var_names):
+                coeff = float(A[i, j])
+                if abs(coeff) > self._TOL:
+                    coeff_str = f"{int(coeff)}" if coeff == int(coeff) else f"{coeff:.4g}"
+                    base_name = var.rstrip('0123456789')
+                    var_idx = j + 1
+                    var_sub = f"{base_name}_{{{var_idx}}}"
+                    if coeff == 1:
+                        var_terms.append(f"{var_sub}")
+                    elif coeff == -1:
+                        var_terms.append(f"-{var_sub}")
+                    elif coeff > 0:
+                        var_terms.append(f"{coeff_str}{var_sub}")
+                    else:
+                        var_terms.append(f"{coeff_str}{var_sub}")
+            
+            eq = var_terms[0] if var_terms else "0"
+            for term in var_terms[1:]:
+                eq += f" + {term}" if not term.startswith("-") else f" {term}"
+            
+            slack_name = f"s_{{{i+1}}}"
+            rhs = float(b[i])
+            
+            latex_eq = f"{eq} + {slack_name} = {int(rhs) if rhs == int(rhs) else f'{rhs:.4g}'}"
+            equations.append(f"\\[{latex_eq}\\]")
+        
+        return "\n".join(equations)
+
     def _simplex_tableau(self, model: MathematicalModel) -> Dict[str, Any]:
         """Método Simplex Tableau con tablas en cada iteración."""
         try:
@@ -168,6 +236,9 @@ class SolverService:
                        for v in var_names}
             obj_value = float(obj_row[-1]) if is_max else -float(obj_row[-1])
             
+            # Generar ecuaciones LaTeX con variables de holgura
+            equations_latex = self._generate_equations_latex(structural_constraints, var_names, symbols, A, b)
+            
             return self._convert_numpy_types({
                 "success": True,
                 "method": "simplex",
@@ -175,6 +246,7 @@ class SolverService:
                 "objective_value": obj_value,
                 "variables": solution,
                 "iterations": len(steps),
+                "equations_latex": equations_latex,
                 "steps": steps,
                 "explanation": f"Método Simplex: {len(steps)} iteraciones hasta optimalidad"
             })
@@ -267,19 +339,32 @@ class SolverService:
             
             solution = {x_name: float(best_point[0]), y_name: float(best_point[1])}
             
-            # Extraer información de restricciones
+            # Extraer información de restricciones y construir matrices A, b
             constraints_info = []
-            for constraint_str in structural_constraints:
+            A = np.zeros((len(structural_constraints), len(var_names)))
+            b = np.zeros(len(structural_constraints))
+            
+            for idx, constraint_str in enumerate(structural_constraints):
                 parsed = self._parse_constraint(constraint_str, symbols)
                 if parsed:
                     lhs, op, rhs_val = parsed
+                    a_coeff = float(lhs.coeff(x, 1) or 0)
+                    b_coeff = float(lhs.coeff(y, 1) or 0)
                     constraints_info.append({
                         "constraint": constraint_str,
-                        "a": float(lhs.coeff(x, 1) or 0),
-                        "b": float(lhs.coeff(y, 1) or 0),
+                        "a": a_coeff,
+                        "b": b_coeff,
                         "rhs": float(rhs_val),
                         "operator": op
                     })
+                    A[idx, 0] = a_coeff
+                    A[idx, 1] = b_coeff
+                    b[idx] = float(rhs_val)
+            
+            # Generar ecuaciones LaTeX con subíndices
+            equations_latex = self._generate_equations_latex_graphical(
+                structural_constraints, var_names, symbols, A, b
+            ) if len(structural_constraints) > 0 else ""
             
             result = {
                 "success": True,
@@ -290,6 +375,7 @@ class SolverService:
                 "optimal_point": best_point,
                 "feasible_points": evaluated_points,
                 "constraints_info": constraints_info,
+                "equations_latex": equations_latex,
                 "objective_coefficients": {x_name: float(obj_expr.coeff(x, 1) or 0), 
                                           y_name: float(obj_expr.coeff(y, 1) or 0)},
                 "explanation": f"Método Gráfico: Se evaluaron {len(feasible_points)} vértices de la región factible"
