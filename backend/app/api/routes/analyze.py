@@ -3,6 +3,7 @@ from typing import Optional
 
 from app.schemas.analyze_schema import AnalyzeRequest, AnalyzeImageRequest, AnalyzeResponse
 from app.services.analyze_service import AnalyzeService
+from app.services.solver_service import SolverService
 from app.core.config import settings
 from app.core.logger import logger
 from app.api.docs import (
@@ -149,6 +150,40 @@ async def get_representations(model: dict) -> dict:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Error al generar representaciones: {str(e)}",
         )
+
+
+
+@router.post(
+    "/solve",
+    description="Resuelve un modelo matemático dado y método elegido (simplex, dual, graphical, big_m)."
+)
+async def solve_model(payload: dict) -> dict:
+    """Resuelve un modelo matemático con el método seleccionado.
+
+    payload debe contener:
+    - model: dict (estructura de MathematicalModel)
+    - method: str (opcional, uno de: 'simplex','graphical','dual','big_m')
+    """
+    try:
+        model = payload.get("model")
+        method = payload.get("method", "simplex")
+
+        if not model:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Falta campo 'model' en payload")
+
+        service = SolverService()
+        from app.schemas.analyze_schema import MathematicalModel as MM
+
+        mm = MM(**model)
+
+        result = service.solve(mm, method=method)
+        return {"success": True, "result": result}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error en endpoint /analyze/solve: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 @router.post(

@@ -7,3 +7,4 @@ cryptography==41.0.7
 sympy==1.12
 groq==0.4.1
 python-multipart==0.0.6
+pulp>=2.7.0

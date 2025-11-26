@@ -84,6 +84,8 @@ class AnalyzeResponse(BaseModel):
     representations: Optional[ProblemRepresentations] = Field(default=None, description="Representaciones: canonical, standard, matrix, dual")
     groq_model: str = Field(..., description="Modelo de Groq usado")
     is_linear: bool = Field(default=True, description="Indica si el problema es lineal")
+    suggested_methods: Optional[List[str]] = Field(default=None, description="Métodos sugeridos para resolver el problema (ordenados)")
+    methods_not_applicable: Optional[Dict[str, str]] = Field(default=None, description="Métodos no aplicables con razón explicativa")
     
     class Config:
         json_schema_extra = {

@@ -1,65 +1,347 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <title>Suite Optimización Lineal</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 2rem; }
-        header { margin-bottom: 2rem; }
-        form { margin-bottom: 2rem; padding: 1rem; border: 1px solid #ccc; border-radius: 8px; }
-        textarea { width: 100%; height: 140px; }
-        input[type=file] { margin-top: .5rem; }
-        .result { white-space: pre-wrap; background: #f9f9f9; padding: 1rem; border-radius: 6px; }
+        :root {
+            --bg: #0f1724;
+            --card: #0b1220;
+            --muted: #9aa4b2;
+            --accent: #5eead4;
+            --panel: #071126;
+        }
+
+        body {
+            font-family: Inter, Arial, sans-serif;
+            margin: 1.5rem;
+            background: linear-gradient(180deg, #07122a 0%, #081026 100%);
+            color: #e6eef8
+        }
+
+        header {
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.4rem
+        }
+
+        .card {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+            padding: 1rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 18px rgba(2, 6, 23, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.03)
+        }
+
+        form {
+            margin-bottom: 1rem;
+            padding: 1rem;
+            border-radius: 8px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 120px;
+            background: transparent;
+            color: inherit;
+            border: 1px dashed rgba(255, 255, 255, 0.06);
+            padding: 0.6rem;
+            border-radius: 6px
+        }
+
+        input[type=file] {
+            margin-top: .5rem;
+        }
+
+        button {
+            background: var(--accent);
+            color: #06202a;
+            border: none;
+            padding: 0.6rem 0.9rem;
+            border-radius: 8px;
+            cursor: pointer
+        }
+
+        .result {
+            white-space: pre-wrap;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 1rem;
+            border-radius: 8px;
+            color: var(--muted);
+        }
+
+        .methods {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 0.6rem
+        }
+
+        .method-btn {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--muted);
+            padding: 0.4rem 0.6rem;
+            border-radius: 8px;
+            cursor: pointer
+        }
+
+        .method-btn.active {
+            background: rgba(94, 234, 212, 0.12);
+            color: var(--accent);
+            border-color: rgba(94, 234, 212, 0.18)
+        }
+
+        .panel-grid {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 1rem
+        }
+
+        @media(max-width:900px) {
+            .panel-grid {
+                grid-template-columns: 1fr
+            }
+        }
     </style>
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+            options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre'] }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
 </head>
+
 <body>
-<header>
-    <h1>Suite Optimización Lineal</h1>
-    <p>Analiza problemas de programación lineal vía texto o imagen (Groq + SymPy).</p>
-</header>
-<section>
-    <h2>Analizar Problema (Texto)</h2>
-    <form id="text-form">
-        <label>Descripción del problema:</label><br>
-        <textarea name="problem" required></textarea><br>
-        <button type="submit">Analizar</button>
-    </form>
-</section>
-<section>
-    <h2>Analizar Problema (Imagen)</h2>
-    <form id="image-form" enctype="multipart/form-data">
-        <label>Imagen:</label><br>
-        <input type="file" name="file" accept="image/*" required><br>
-        <label>Descripción adicional (opcional):</label><br>
-        <textarea name="problem_description"></textarea><br>
-        <button type="submit">Analizar Imagen</button>
-    </form>
-</section>
-<section>
-    <h2>Resultado</h2>
-    <div id="result" class="result">(sin resultados todavía)</div>
-</section>
-<script>
-const apiBase = '/api/v1';
+    <header>
+        <div>
+            <h1>Suite Optimización Lineal</h1>
+            <div style="color:var(--muted);font-size:0.9rem">Analiza y resuelve problemas de programación lineal (IA +
+                SymPy + Solvers)</div>
+        </div>
+    </header>
+    <div class="panel-grid">
+        <div>
+            <div class="card">
+                <h2 style="margin-top:0">Analizar Problema (Texto)</h2>
+                <form id="text-form">
+                    <label>Descripción del problema:</label><br>
+                    <textarea name="problem" required></textarea><br>
+                    <button type="submit">Analizar</button>
+                </form>
+            </div>
 
-function renderResult(data) {
-    document.getElementById('result').textContent = JSON.stringify(data, null, 2);
-}
+            <div class="card" style="margin-top:1rem">
+                <h2 style="margin-top:0">Analizar Problema (Imagen)</h2>
+                <form id="image-form" enctype="multipart/form-data">
+                    <label>Imagen:</label><br>
+                    <input type="file" name="file" accept="image/*" required><br>
+                    <label>Descripción adicional (opcional):</label><br>
+                    <textarea name="problem_description"></textarea><br>
+                    <button type="submit">Analizar Imagen</button>
+                </form>
+            </div>
+        </div>
 
-document.getElementById('text-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const problem = e.target.problem.value;
-    const payload = { problem: problem };
-    const resp = await fetch(`${apiBase}/analyze/`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    renderResult(await resp.json());
-});
+        <div>
+            <div class="card">
+                <h2 style="margin-top:0">Resultado</h2>
+                <div id="result" class="result">(sin resultados todavía)</div>
+                <div id="methods" style="margin-top:0.8rem"></div>
+                <div id="solve-panel" style="margin-top:0.8rem; display:none">
+                    <button id="run-solve">Ejecutar método seleccionado</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const apiBase = '/api/v1';
 
-document.getElementById('image-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    const resp = await fetch(`${apiBase}/analyze/analyze-image`, { method: 'POST', body: formData });
-    renderResult(await resp.json());
-});
-</script>
+        function exprToLatex(s) {
+            if (!s) return '';
+            try {
+                // Replace power ** with ^
+                s = s.replace(/\*\*/g, '^');
+                // replace multiplication * with \cdot (but avoid replacing when inside ^)
+                s = s.replace(/\s*\*\s*/g, ' \\cdot ');
+                // inequalities
+                s = s.replace(/<=/g, '\\le');
+                s = s.replace(/>=/g, '\\ge');
+                // replace variable subscripts like x1 -> x_{1}
+                s = s.replace(/([a-zA-Z]+)(\d+)/g, '$1_{ $2 }');
+                // clean multiple spaces
+                s = s.replace(/\s+/g, ' ');
+                return s;
+            } catch (e) {
+                return s;
+            }
+        }
+
+        function renderResult(data) {
+            const el = document.getElementById('result');
+            el.innerHTML = '';
+
+            const model = data.mathematical_model || (data.result && data.result.mathematical_model) || (data.mathematical_model && data.mathematical_model.mathematical_model && data.mathematical_model.mathematical_model.mathematical_model && null);
+
+            if (model) {
+                const title = document.createElement('h3');
+                title.textContent = 'Modelo canónico';
+                title.style.margin = '0 0 0.5rem 0';
+                title.style.color = 'var(--accent)';
+                el.appendChild(title);
+
+                const objTitle = document.createElement('div');
+                objTitle.textContent = (model.objective && model.objective.toLowerCase() === 'min') ? 'Minimizar:' : 'Maximizar:';
+                objTitle.style.color = 'var(--muted)';
+                el.appendChild(objTitle);
+
+                const objExpr = document.createElement('div');
+                objExpr.style.fontFamily = 'monospace';
+                objExpr.style.fontSize = '1.05rem';
+                objExpr.style.margin = '0.35rem 0 0.75rem 0';
+                objExpr.innerHTML = `$$ ${exprToLatex(model.objective_function || '')} $$`;
+                el.appendChild(objExpr);
+
+                const subj = document.createElement('div');
+                subj.textContent = 'Sujeto a:';
+                subj.style.fontWeight = '600';
+                subj.style.marginBottom = '0.35rem';
+                el.appendChild(subj);
+
+                const ul = document.createElement('div');
+                ul.style.color = 'var(--muted)';
+                ul.style.marginTop = '0';
+                (model.constraints || []).forEach(c => {
+                    const li = document.createElement('div');
+                    li.style.fontFamily = 'monospace';
+                    li.style.marginBottom = '0.25rem';
+                    li.innerHTML = `$$ ${exprToLatex(c)} $$`;
+                    ul.appendChild(li);
+                });
+                el.appendChild(ul);
+
+                if (model.variables && Object.keys(model.variables).length) {
+                    const varsTitle = document.createElement('div');
+                    varsTitle.textContent = 'Variables (descripción):';
+                    varsTitle.style.color = 'var(--muted)';
+                    varsTitle.style.marginTop = '0.6rem';
+                    el.appendChild(varsTitle);
+
+                    const varsList = document.createElement('div');
+                    varsList.style.fontFamily = 'monospace';
+                    varsList.style.color = 'var(--muted)';
+                    Object.entries(model.variables).forEach(([k, v]) => {
+                        const row = document.createElement('div');
+                        row.textContent = `${k} — ${v || ''}`;
+                        varsList.appendChild(row);
+                    });
+                    el.appendChild(varsList);
+                }
+
+                // Ask MathJax to typeset the new content
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    window.MathJax.typesetPromise([el]).catch(function (err) { console.warn('MathJax typeset error', err) });
+                }
+                return;
+            }
+
+            if (data && data.result && typeof data.result === 'object') {
+                el.innerHTML = '<pre>' + JSON.stringify(data.result, null, 2) + '</pre>';
+                return;
+            }
+
+            el.textContent = JSON.stringify(data, null, 2);
+        }
+
+        let lastAnalysis = null;
+        let selectedMethod = null;
+
+        async function handleAnalysisResponse(json) {
+            lastAnalysis = json;
+            renderResult(json);
+            const methodsDiv = document.getElementById('methods');
+            methodsDiv.innerHTML = '';
+
+            const suggested = json.suggested_methods || (json.result && json.result.suggested_methods) || [];
+            const notApp = json.methods_not_applicable || (json.result && json.result.methods_not_applicable) || {};
+
+            if (suggested.length === 0 && Object.keys(notApp).length === 0) {
+                methodsDiv.textContent = 'No se generaron sugerencias de métodos.';
+                document.getElementById('solve-panel').style.display = 'none';
+                return;
+            }
+
+            const title = document.createElement('div');
+            title.style.color = 'var(--muted)'; title.style.marginBottom = '0.5rem'; title.textContent = 'Métodos sugeridos';
+            methodsDiv.appendChild(title);
+
+            const list = document.createElement('div'); list.className = 'methods';
+            suggested.forEach(m => {
+                const btn = document.createElement('button'); btn.className = 'method-btn'; btn.textContent = m;
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.method-btn').forEach(x => x.classList.remove('active'));
+                    btn.classList.add('active'); selectedMethod = m; document.getElementById('solve-panel').style.display = 'block';
+                });
+                list.appendChild(btn);
+            });
+            methodsDiv.appendChild(list);
+
+            // Explanation for not applicable
+            if (Object.keys(notApp).length) {
+                const explTitle = document.createElement('div'); explTitle.style.color = 'var(--muted)'; explTitle.style.marginTop = '0.6rem'; explTitle.textContent = 'Métodos no aplicables (razón)';
+                methodsDiv.appendChild(explTitle);
+                const ul = document.createElement('ul'); ul.style.color = 'var(--muted)';
+                for (const k in notApp) {
+                    const li = document.createElement('li'); li.textContent = `${k}: ${notApp[k]}`; ul.appendChild(li);
+                }
+                methodsDiv.appendChild(ul);
+            }
+        }
+
+        document.getElementById('text-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const problem = e.target.problem.value;
+            const payload = { problem: problem };
+            const resp = await fetch(`${apiBase}/analyze/`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            const json = await resp.json();
+            await handleAnalysisResponse(json);
+        });
+
+        document.getElementById('image-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const resp = await fetch(`${apiBase}/analyze/analyze-image`, { method: 'POST', body: formData });
+            const json = await resp.json();
+            await handleAnalysisResponse(json);
+        });
+
+        document.getElementById('run-solve').addEventListener('click', async () => {
+            if (!lastAnalysis) { alert('No hay análisis previo'); return; }
+            if (!selectedMethod) { alert('Selecciona un método'); return; }
+
+            // Prepare model payload
+            const model = lastAnalysis.mathematical_model || lastAnalysis.result && lastAnalysis.result.mathematical_model;
+            if (!model) { alert('No se encontró modelo matemático en el análisis'); return; }
+
+            const payload = { model: model, method: selectedMethod };
+            const resp = await fetch(`${apiBase}/analyze/solve`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            const json = await resp.json();
+            // mostrar resultado de la resolución
+            if (json && json.result) {
+                renderResult(json.result);
+            } else {
+                renderResult(json);
+            }
+        });
+    </script>
 </body>
+
 </html>

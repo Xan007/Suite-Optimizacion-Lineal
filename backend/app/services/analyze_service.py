@@ -9,6 +9,7 @@ from app.core.groq_client import GroqClient
 from app.schemas.analyze_schema import MathematicalModel, AnalyzeResponse
 from app.services.problem_processor import ProblemProcessor
 from app.services.problem_transformer import ProblemTransformer
+from app.services.solver_service import SolverService
 from app.services.expression_utils import clean_sympy_expression
 from app.prompts import get_prompt
 
@@ -19,6 +20,7 @@ class AnalyzeService:
     def __init__(self, groq_api_key: str):
         self.groq_client = GroqClient(api_key=groq_api_key)
         self.problem_processor = ProblemProcessor()
+        self.solver = SolverService()
 
     def analyze_problem(
         self,
@@ -88,6 +90,16 @@ class AnalyzeService:
                 groq_model=model_to_use,
                 is_linear=True,
             )
+
+            # Determinar métodos aplicables y razones por las que no aplican
+            try:
+                suggested, not_applicable = self.solver.determine_applicable_methods(math_model)
+                response.suggested_methods = suggested
+                response.methods_not_applicable = not_applicable
+            except Exception:
+                # no es crítico
+                response.suggested_methods = []
+                response.methods_not_applicable = {}
 
             logger.info("Análisis completado exitosamente")
             return response
@@ -353,6 +365,15 @@ class AnalyzeService:
                 groq_model=vision_model,
                 is_linear=True,
             )
+
+            # Determinar métodos aplicables y razones por las que no aplican
+            try:
+                suggested, not_applicable = self.solver.determine_applicable_methods(math_model)
+                response.suggested_methods = suggested
+                response.methods_not_applicable = not_applicable
+            except Exception:
+                response.suggested_methods = []
+                response.methods_not_applicable = {}
 
             logger.info("Análisis desde imagen completado exitosamente")
             return response
