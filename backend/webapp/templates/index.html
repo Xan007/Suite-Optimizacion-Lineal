@@ -410,7 +410,8 @@
         };
     </script>
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <!-- Chart.js para gráficos (reemplaza Plotly) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 
 <body>
@@ -772,14 +773,28 @@
                 console.warn('No objective_value in result');
             }
 
-            // Si es método gráfico, intentar dibujar la gráfica YA (antes de evaluar vértices)
-            if (result.method === 'graphical') {
-                try {
-                    const model = lastAnalysis?.mathematical_model || result.mathematical_model || null;
-                    // draw plot before rendering steps/vertices so it appears above
-                    plotGraphicalSolution(result, model);
-                } catch (e) {
-                    console.warn('Error dibujando gráfica inicial:', e);
+            // ===== MOSTRAR ECUACIONES LaTeX CON VARIABLES DE HOLGURA (SOLO PARA SIMPLEX) =====
+            if (result.method === 'simplex' && result.equations_latex && result.equations_latex.trim().length > 0) {
+                const eqTitle = document.createElement('div');
+                eqTitle.className = 'section-title';
+                eqTitle.textContent = 'Ecuaciones con Variables de Holgura';
+                content.appendChild(eqTitle);
+
+                const eqDiv = document.createElement('div');
+                eqDiv.style.background = '#f8fbff';
+                eqDiv.style.border = '2px solid #0066cc';
+                eqDiv.style.borderRadius = '10px';
+                eqDiv.style.padding = '1.5rem';
+                eqDiv.style.marginBottom = '1.5rem';
+                eqDiv.style.lineHeight = '2.2';
+
+                eqDiv.innerHTML = result.equations_latex;
+                content.appendChild(eqDiv);
+
+                // Renderizar MathJax para las ecuaciones
+                if (window.MathJax) {
+                    MathJax.contentDocument = document;
+                    MathJax.typesetPromise([eqDiv]).catch(err => console.warn('MathJax error:', err));
                 }
             }
 
@@ -1130,7 +1145,18 @@
                 content.appendChild(stepsContainer);
             }
 
-            // Puntos factibles
+            // Si es método gráfico, intentar dibujar la gráfica ANTES de la tabla
+            if (result.method === 'graphical') {
+                try {
+                    const model = lastAnalysis?.mathematical_model || result.mathematical_model || null;
+                    // Graficar cuando Chart.js esté disponible
+                    plotGraphicalSolution(result, model);
+                } catch (e) {
+                    console.warn('Error preparando gráfica:', e);
+                }
+            }
+
+            // Puntos factibles (tabla de vértices)
             if (result.feasible_points && result.feasible_points.length > 0) {
                 const pTitle = document.createElement('div');
                 pTitle.className = 'section-title';
@@ -1297,11 +1323,15 @@
                 content.appendChild(senDiv);
             }
 
-            // Si es método gráfico, mostrar gráfica
+            // Si es método gráfico, intentar dibujar la gráfica
             if (result.method === 'graphical') {
-                // Obtener modelo del análisis guardado
-                const model = lastAnalysis?.mathematical_model;
-                plotGraphicalSolution(result, model);
+                try {
+                    const model = lastAnalysis?.mathematical_model || result.mathematical_model || null;
+                    // Graficar cuando Chart.js esté disponible
+                    plotGraphicalSolution(result, model);
+                } catch (e) {
+                    console.warn('Error preparando gráfica:', e);
+                }
             }
         }
 
@@ -1318,20 +1348,33 @@
             }
         }
 
+        // ====================================================================
+        // Gráficos con Chart.js (Método Gráfico)
+        // ====================================================================
         function plotGraphicalSolution(result, model) {
             try {
                 console.log('plotGraphicalSolution called with', result.feasible_points?.length, 'points');
-                const existing = document.getElementById('graphical-plot');
-                if (existing) existing.remove();
 
-                if (!result || !result.feasible_points || result.feasible_points.length === 0) {
+                // Verificar que Chart.js esté disponible
+                if (!window.Chart) {
+                    console.error('Chart.js not available');
                     return;
                 }
 
-                // Normalize feasible points to arrays [x,y]
-                const pts = result.feasible_points.map(p => Array.isArray(p.point) ? p.point.map(Number) : [Number(p.point[0]), Number(p.point[1])]);
+                const existingContainer = document.getElementById('graphical-plot-container');
+                if (existingContainer) existingContainer.remove();
 
-                // Calculate bounds from feasible points
+                if (!result || !result.feasible_points || result.feasible_points.length === 0) {
+                    console.warn('No feasible points to plot');
+                    return;
+                }
+
+                // Normalizar puntos factibles a arrays [x,y]
+                const pts = result.feasible_points.map(p =>
+                    Array.isArray(p.point) ? p.point.map(Number) : [Number(p.point[0]), Number(p.point[1])]
+                );
+
+                // Calcular límites
                 const xCoords = pts.map(p => p[0]);
                 const yCoords = pts.map(p => p[1]);
                 let xMin = Math.min(...xCoords);
@@ -1339,7 +1382,6 @@
                 let yMin = Math.min(...yCoords);
                 let yMax = Math.max(...yCoords);
 
-                // Ensure numeric bounds and add padding
                 if (!isFinite(xMin) || !isFinite(xMax)) { xMin = -5; xMax = 5; }
                 if (!isFinite(yMin) || !isFinite(yMax)) { yMin = -5; yMax = 5; }
 
@@ -1350,75 +1392,129 @@
                 xMin -= xPad; xMax += xPad;
                 yMin -= yPad; yMax += yPad;
 
-                const traces = [];
+                // Crear contenedor
+                const containerDiv = document.createElement('div');
+                containerDiv.id = 'graphical-plot-container';
+                containerDiv.style.width = '100%';
+                containerDiv.style.marginBottom = '1.5rem';
+                containerDiv.style.marginTop = '1.5rem';
+                containerDiv.style.border = '2px solid #ddd';
+                containerDiv.style.borderRadius = '8px';
+                containerDiv.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                containerDiv.style.position = 'relative';
+                containerDiv.style.height = '550px';
 
-                // If polygon (>=3 vertices) draw filled feasible region as a trace (ordered by angle)
+                const canvas = document.createElement('canvas');
+                canvas.id = 'graphical-plot';
+                containerDiv.appendChild(canvas);
+                document.getElementById('solution-content').insertBefore(containerDiv, document.getElementById('solution-content').firstChild.nextSibling.nextSibling.nextSibling);
+
+                // Datos para Chart.js
+                const datasets = [];
+
+                // Colores distintos para cada restricción
+                const constraintColors = [
+                    '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
+                    '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
+                    '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd'
+                ];
+
+                // Región factible (polígono con sombreado azul)
                 if (pts.length >= 3) {
-                    const center = { x: xCoords.reduce((a, b) => a + b, 0) / xCoords.length, y: yCoords.reduce((a, b) => a + b, 0) / yCoords.length };
-                    const angles = pts.map((p, i) => ({ idx: i, angle: Math.atan2(p[1] - center.y, p[0] - center.x) }))
-                        .sort((a, b) => a.angle - b.angle);
-                    const polyX = angles.map(a => pts[a.idx][0]);
-                    const polyY = angles.map(a => pts[a.idx][1]);
-                    // Close polygon
-                    polyX.push(polyX[0]); polyY.push(polyY[0]);
+                    const center = {
+                        x: xCoords.reduce((a, b) => a + b, 0) / xCoords.length,
+                        y: yCoords.reduce((a, b) => a + b, 0) / yCoords.length
+                    };
+                    const angles = pts.map((p, i) => ({
+                        idx: i,
+                        angle: Math.atan2(p[1] - center.y, p[0] - center.x)
+                    })).sort((a, b) => a.angle - b.angle);
 
-                    traces.push({
-                        x: polyX,
-                        y: polyY,
-                        mode: 'lines',
-                        name: 'Región Factible',
-                        fill: 'toself',
-                        fillcolor: 'rgba(100,200,255,0.25)',
-                        line: { color: 'rgba(0,100,200,0.7)', width: 2.5 },
-                        hoverinfo: 'none',
-                        opacity: 0.6
+                    const polyPoints = angles.map(a => ({
+                        x: pts[a.idx][0],
+                        y: pts[a.idx][1]
+                    }));
+                    polyPoints.push(polyPoints[0]); // Cerrar polígono
+
+                    datasets.push({
+                        label: 'Región Factible',
+                        data: polyPoints,
+                        borderColor: 'rgba(100,150,200,0.8)',
+                        backgroundColor: 'rgba(100,180,255,0.5)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0,
+                        showLine: true,
+                        pointRadius: 0,
+                        borderDash: []
                     });
                 }
 
-                // Draw constraint lines (if provided)
+                // Líneas de restricciones con ecuaciones reales
                 if (result.constraints_info && result.constraints_info.length > 0) {
                     result.constraints_info.forEach((constraintData, idx) => {
                         try {
                             const a = Number(constraintData.a) || 0;
                             const b = Number(constraintData.b) || 0;
                             const rhs = Number(constraintData.rhs) || 0;
-                            const op = constraintData.operator || '<=';
 
-                            // Build line across x-range; if b==0 draw vertical line at x = rhs/a
+                            // Generar ecuación en formato: "ax + by = c"
+                            let equationStr = '';
+                            if (Math.abs(a) > 1e-12) {
+                                const aStr = a === 1 ? 'x' : (a === -1 ? '-x' : `${a.toFixed(2)}x`);
+                                equationStr = aStr;
+                            }
                             if (Math.abs(b) > 1e-12) {
-                                const xLine = [];
-                                const yLine = [];
-                                const steps = 300;
-                                const step = (xMax - xMin) / steps;
-                                for (let x = xMin; x <= xMax + 1e-9; x += step) {
-                                    const y = (rhs - a * x) / b;
-                                    xLine.push(x);
-                                    yLine.push(y);
-                                }
-                                let lineColor = '#666666';
-                                let dashStyle = 'solid';
-                                if (op === '<=') { lineColor = '#0066cc'; dashStyle = 'solid'; }
-                                else if (op === '>=') { lineColor = '#cc6600'; dashStyle = 'dash'; }
-                                else if (op === '=') { lineColor = '#009900'; dashStyle = 'dot'; }
+                                const bStr = b > 0 ? '+' : '';
+                                const bVal = b === 1 ? 'y' : (b === -1 ? '-y' : `${b.toFixed(2)}y`);
+                                equationStr += (equationStr ? ' ' + bStr + ' ' + bVal : bVal);
+                            }
+                            equationStr += ` = ${rhs.toFixed(2)}`;
 
-                                traces.push({
-                                    x: xLine,
-                                    y: yLine,
-                                    mode: 'lines',
-                                    name: `Restricción ${idx + 1}: ${constraintData.constraint || ''}`,
-                                    line: { width: 2, color: lineColor, dash: dashStyle },
-                                    hoverinfo: 'name'
-                                });
+                            const lineColor = constraintColors[idx % constraintColors.length];
+
+                            if (Math.abs(b) > 1e-12) {
+                                // Línea: y = (rhs - a*x) / b
+                                const linePoints = [];
+                                const steps = 100;
+                                const step = (xMax - xMin) / steps;
+                                for (let x = xMin; x <= xMax; x += step) {
+                                    const y = (rhs - a * x) / b;
+                                    if (y >= yMin - yPad && y <= yMax + yPad) {
+                                        linePoints.push({ x: x.toFixed(2), y: y.toFixed(2) });
+                                    }
+                                }
+
+                                if (linePoints.length > 0) {
+                                    datasets.push({
+                                        label: equationStr,
+                                        data: linePoints,
+                                        borderColor: lineColor,
+                                        borderWidth: 2.5,
+                                        borderDash: [],
+                                        pointRadius: 0,
+                                        fill: false,
+                                        tension: 0,
+                                        showLine: true
+                                    });
+                                }
                             } else if (Math.abs(a) > 1e-12) {
-                                // vertical line x = rhs / a
+                                // Línea vertical: x = rhs / a
                                 const xv = rhs / a;
-                                traces.push({
-                                    x: [xv, xv],
-                                    y: [yMin - 10 * yPad, yMax + 10 * yPad],
-                                    mode: 'lines',
-                                    name: `Restricción ${idx + 1}: ${constraintData.constraint || ''}`,
-                                    line: { width: 2, color: '#9966cc', dash: 'dash' },
-                                    hoverinfo: 'name'
+                                const linePoints = [
+                                    { x: xv.toFixed(2), y: (yMin - yPad).toFixed(2) },
+                                    { x: xv.toFixed(2), y: (yMax + yPad).toFixed(2) }
+                                ];
+                                datasets.push({
+                                    label: equationStr,
+                                    data: linePoints,
+                                    borderColor: lineColor,
+                                    borderWidth: 2.5,
+                                    borderDash: [],
+                                    pointRadius: 0,
+                                    fill: false,
+                                    tension: 0,
+                                    showLine: true
                                 });
                             }
                         } catch (e) {
@@ -1427,114 +1523,119 @@
                     });
                 }
 
-                // Objective level curves (if coefficients given)
-                if (result.objective_coefficients && result.objective_value !== undefined) {
-                    const keys = Object.keys(result.objective_coefficients);
-                    const c1 = Number(result.objective_coefficients[keys[0]]) || 1;
-                    const c2 = Number(result.objective_coefficients[keys[1]]) || 1;
-                    if (Math.abs(c2) > 1e-12) {
-                        const zValues = [
-                            result.objective_value * 0.3,
-                            result.objective_value * 0.7,
-                            result.objective_value,
-                            result.objective_value * 1.3
-                        ];
-                        zValues.forEach((z, idx) => {
-                            const xO = [];
-                            const yO = [];
-                            const steps = 300;
-                            const step = (xMax - xMin) / steps;
-                            for (let x = xMin; x <= xMax + 1e-9; x += step) {
-                                yO.push((z - c1 * x) / c2);
-                                xO.push(x);
-                            }
-                            const isOpt = (idx === 2);
-                            traces.push({
-                                x: xO,
-                                y: yO,
-                                mode: 'lines',
-                                name: isOpt ? `Función Objetivo (Z=${result.objective_value.toFixed(2)})` : `Nivel Z=${z.toFixed(2)}`,
-                                line: { width: isOpt ? 3.5 : 1.5, color: isOpt ? '#ff6b35' : '#ffcc99', dash: isOpt ? 'solid' : 'dash' },
-                                opacity: isOpt ? 1 : 0.6,
-                                hoverinfo: 'name'
-                            });
-                        });
-                    }
-                }
-
-                // Vertices trace
-                traces.push({
-                    x: pts.map(p => p[0]),
-                    y: pts.map(p => p[1]),
-                    mode: 'markers+text',
-                    name: 'Vértices Factibles',
-                    marker: { size: 9, color: '#0066cc', line: { color: '#003366', width: 2 } },
-                    text: pts.map((p, i) => `V${i + 1}<br>(${p[0].toFixed(2)}, ${p[1].toFixed(2)})`),
-                    textposition: 'top center',
-                    textfont: { size: 10 },
-                    hoverinfo: 'text'
+                // Vértices factibles en negro
+                datasets.push({
+                    label: 'Vértices',
+                    data: pts.map((p, i) => ({
+                        x: p[0].toFixed(3),
+                        y: p[1].toFixed(3),
+                        vertex: `V${i + 1}`
+                    })),
+                    borderColor: '#000000',
+                    backgroundColor: '#000000',
+                    borderWidth: 2,
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
+                    showLine: false,
+                    fill: false
                 });
 
-                // Optimal point
+                // Punto óptimo destacado
                 if (result.optimal_point) {
-                    const op = Array.isArray(result.optimal_point) ? result.optimal_point.map(Number) : [Number(result.optimal_point[0]), Number(result.optimal_point[1])];
-                    traces.push({
-                        x: [op[0]],
-                        y: [op[1]],
-                        mode: 'markers+text',
-                        name: 'Óptimo',
-                        marker: { size: 18, color: '#ff6b35', symbol: 'star', line: { color: '#cc3300', width: 3 } },
-                        text: `ÓPTIMO<br>(${op[0].toFixed(3)}, ${op[1].toFixed(3)})<br>Z=${Number(result.objective_value).toFixed(3)}`,
-                        textposition: 'bottom center',
-                        textfont: { size: 12, color: '#ff6b35' },
-                        hoverinfo: 'text'
+                    const op = Array.isArray(result.optimal_point)
+                        ? result.optimal_point.map(Number)
+                        : [Number(result.optimal_point[0]), Number(result.optimal_point[1])];
+
+                    datasets.push({
+                        label: 'Óptimo',
+                        data: [{
+                            x: op[0].toFixed(3),
+                            y: op[1].toFixed(3),
+                            optimal: true
+                        }],
+                        borderColor: '#cc0000',
+                        backgroundColor: '#ff6b35',
+                        borderWidth: 3,
+                        pointRadius: 12,
+                        pointStyle: 'star',
+                        pointHoverRadius: 15,
+                        showLine: false,
+                        fill: false
                     });
                 }
 
-                // Create container
-                const containerId = 'graphical-plot';
-                const graphContainer = document.createElement('div');
-                graphContainer.id = containerId;
-                graphContainer.style.width = '100%';
-                graphContainer.style.height = '550px';
-                graphContainer.style.marginBottom = '1.5rem';
-                graphContainer.style.marginTop = '1.5rem';
-                graphContainer.style.border = '2px solid #ddd';
-                graphContainer.style.borderRadius = '8px';
-                graphContainer.style.display = 'block';
-                graphContainer.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
-                document.getElementById('solution-content').insertBefore(graphContainer, document.getElementById('solution-content').firstChild);
-
-                const layout = {
-                    title: { text: '<b>Visualización del Método Gráfico</b>', font: { size: 18, color: '#333' } },
-                    xaxis: { title: '<b>X₁</b>', range: [xMin, xMax], zeroline: true, showgrid: true, gridcolor: 'rgba(200,200,200,0.3)' },
-                    yaxis: { title: '<b>X₂</b>', range: [yMin, yMax], zeroline: true, showgrid: true, gridcolor: 'rgba(200,200,200,0.3)' },
-                    hovermode: 'closest',
-                    showlegend: true,
-                    legend: { x: 0.02, y: 0.98, bgcolor: 'rgba(255,255,255,0.8)', bordercolor: '#ddd', borderwidth: 1 },
-                    plot_bgcolor: '#fafafa',
-                    paper_bgcolor: '#ffffff',
-                    margin: { l: 70, r: 50, t: 70, b: 70 },
-                    autosize: true
-                };
-
-                if (window.Plotly) {
-                    try {
-                        Plotly.newPlot(containerId, traces, layout, { responsive: true, displayModeBar: true });
-                    } catch (err) {
-                        console.error('Plotly draw error:', err);
-                        const el = document.getElementById(containerId);
-                        if (el) el.remove();
+                // Opciones de Chart.js
+                const ctx = canvas.getContext('2d');
+                const chart = new Chart(ctx, {
+                    type: 'scatter',
+                    data: {
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top',
+                                labels: {
+                                    boxWidth: 15,
+                                    font: { size: 10 },
+                                    padding: 10
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Visualización del Método Gráfico',
+                                font: { size: 18, weight: 'bold' }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                type: 'linear',
+                                title: {
+                                    display: true,
+                                    text: 'x',
+                                    font: { weight: 'bold', size: 14 }
+                                },
+                                min: xMin,
+                                max: xMax,
+                                grid: {
+                                    display: true,
+                                    drawBorder: true,
+                                    color: 'rgba(200,200,200,0.3)'
+                                },
+                                ticks: {
+                                    stepSize: xRange / 10
+                                }
+                            },
+                            y: {
+                                type: 'linear',
+                                title: {
+                                    display: true,
+                                    text: 'y',
+                                    font: { weight: 'bold', size: 14 }
+                                },
+                                min: yMin,
+                                max: yMax,
+                                grid: {
+                                    display: true,
+                                    drawBorder: true,
+                                    color: 'rgba(200,200,200,0.3)'
+                                },
+                                ticks: {
+                                    stepSize: yRange / 10
+                                }
+                            }
+                        }
                     }
-                } else {
-                    console.error('Plotly not available');
-                    const el = document.getElementById(containerId);
-                    if (el) el.remove();
-                }
+                });
+
+                console.log('Chart.js graph created successfully');
 
             } catch (error) {
                 console.error('Error en plotGraphicalSolution:', error);
-                const el = document.getElementById('graphical-plot');
+                const el = document.getElementById('graphical-plot-container');
                 if (el) el.remove();
             }
         }
