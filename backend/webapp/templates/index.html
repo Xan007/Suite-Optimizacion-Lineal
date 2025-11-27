@@ -765,7 +765,7 @@
                 objDiv.appendChild(label);
                 const val = document.createElement('div');
                 val.className = 'result-value';
-                val.textContent = result.objective_value.toFixed(6);
+                val.textContent = formatNumber(result.objective_value, 6);
                 objDiv.appendChild(val);
                 content.appendChild(objDiv);
                 console.log('Rendered objective value:', result.objective_value);
@@ -816,7 +816,7 @@
                     item.appendChild(nameDiv);
                     const valDiv = document.createElement('div');
                     valDiv.className = 'var-value';
-                    valDiv.textContent = Number(value).toFixed(6);
+                    valDiv.textContent = formatNumber(Number(value), 6);
                     item.appendChild(valDiv);
                     varGrid.appendChild(item);
                 }
@@ -906,7 +906,7 @@
                                 <div style="font-weight: 600; margin-bottom: 0.3rem;">Operación Pivote</div>
                                 <div>Variable Entrante: <strong>${step.entering_variable}</strong></div>
                                 <div>Variable Saliente: <strong>${step.leaving_variable}</strong></div>
-                                <div>Elemento Pivote: <strong>${step.pivot_element.toFixed(4)}</strong></div>
+                                <div>Elemento Pivote: <strong>${formatNumber(step.pivot_element, 4)}</strong></div>
                                 <div>Fila Pivote: ${step.leaving_row}, Columna Pivote: ${step.entering_col}</div>
                             `;
                             stepCard.appendChild(pivotInfo);
@@ -990,7 +990,7 @@
 
                                 row.forEach((val, colIdx) => {
                                     const td = document.createElement('td');
-                                    td.textContent = val.toFixed(4);
+                                    td.textContent = formatNumber(val, 4);
                                     td.style.padding = '0.4rem';
                                     td.style.border = '1px solid #ddd';
                                     td.style.textAlign = 'center';
@@ -1014,7 +1014,7 @@
                             objRow.appendChild(objLabel);
                             step.obj_row_before.forEach((val, idx) => {
                                 const td = document.createElement('td');
-                                td.textContent = val.toFixed(4);
+                                td.textContent = formatNumber(val, 4);
                                 td.style.padding = '0.4rem';
                                 td.style.border = '1px solid #ddd';
                                 td.style.textAlign = 'center';
@@ -1106,7 +1106,7 @@
 
                                 row.forEach((val, colIdx) => {
                                     const td = document.createElement('td');
-                                    td.textContent = val.toFixed(4);
+                                    td.textContent = formatNumber(val, 4);
                                     td.style.padding = '0.4rem';
                                     td.style.border = '1px solid #ddd';
                                     td.style.textAlign = 'center';
@@ -1126,7 +1126,7 @@
                             objRow.appendChild(objLabel);
                             step.obj_row_after.forEach((val, idx) => {
                                 const td = document.createElement('td');
-                                td.textContent = val.toFixed(4);
+                                td.textContent = formatNumber(val, 4);
                                 td.style.padding = '0.4rem';
                                 td.style.border = '1px solid #ddd';
                                 td.style.textAlign = 'center';
@@ -1197,17 +1197,17 @@
 
                     // Coordenada X
                     const xCell = document.createElement('td');
-                    xCell.textContent = Number(pt.point[0]).toFixed(4);
+                    xCell.textContent = formatNumber(Number(pt.point[0]), 4);
                     tr.appendChild(xCell);
 
                     // Coordenada Y
                     const yCell = document.createElement('td');
-                    yCell.textContent = Number(pt.point[1]).toFixed(4);
+                    yCell.textContent = formatNumber(Number(pt.point[1]), 4);
                     tr.appendChild(yCell);
 
                     // Valor Objetivo
                     const objCell = document.createElement('td');
-                    objCell.textContent = Number(pt.objective).toFixed(6);
+                    objCell.textContent = formatNumber(Number(pt.objective), 6);
                     objCell.style.fontFamily = 'monospace';
                     tr.appendChild(objCell);
 
@@ -1254,7 +1254,7 @@
                         valLine.style.justifyContent = 'space-between';
                         valLine.style.paddingBottom = '0.3rem';
                         valLine.style.borderBottom = '1px solid rgba(255,152,0,0.1)';
-                        valLine.innerHTML = `<strong>${varName}</strong> <span style="font-family: monospace; color: #0066cc;">${Number(opPoint[idx]).toFixed(4)}</span>`;
+                        valLine.innerHTML = `<strong>${varName}</strong> <span style="font-family: monospace; color: #0066cc;">${formatNumber(Number(opPoint[idx]), 4)}</span>`;
                         varsList.appendChild(valLine);
                     });
                     optimalSection.appendChild(varsList);
@@ -1268,7 +1268,7 @@
                     zLine.style.fontSize = '1.15rem';
                     zLine.style.display = 'flex';
                     zLine.style.justifyContent = 'space-between';
-                    zLine.innerHTML = `<span>Valor óptimo:</span> <span style="color: #ff6b35; font-size: 1.3rem; font-family: monospace;">Z = ${Number(result.objective_value).toFixed(6)}</span>`;
+                    zLine.innerHTML = `<span>Valor óptimo:</span> <span style="color: #ff6b35; font-size: 1.3rem; font-family: monospace;">Z = ${formatNumber(Number(result.objective_value), 6)}</span>`;
                     optimalSection.appendChild(zLine);
 
                     wrapper.appendChild(optimalSection);
@@ -1294,7 +1294,7 @@
                     senDiv.appendChild(dp);
                     const dpList = document.createElement('div');
                     dpList.style.marginBottom = '0.8rem';
-                    dpList.textContent = result.sensitivity.dual_prices.map(v => v.toFixed(4)).join(', ');
+                    dpList.textContent = result.sensitivity.dual_prices.map(v => formatNumber(v, 4)).join(', ');
                     senDiv.appendChild(dpList);
                 }
 
@@ -1305,7 +1305,7 @@
                     senDiv.appendChild(rc);
                     const rcList = document.createElement('div');
                     rcList.textContent = Object.entries(result.sensitivity.reduced_costs)
-                        .map(([k, v]) => `${k}: ${Number(v).toFixed(4)}`)
+                        .map(([k, v]) => `${k}: ${formatNumber(Number(v), 4)}`)
                         .join(', ');
                     senDiv.appendChild(rcList);
                 }
@@ -1349,7 +1349,24 @@
         }
 
         // ====================================================================
-        // Gráficos con Chart.js (Método Gráfico)
+        // Función auxiliar para limpiar decimales
+        // ====================================================================
+        function formatNumber(num, decimals = 3) {
+            if (typeof num !== 'number' || !isFinite(num)) return num;
+
+            // Si todos los decimales son 0, mostrar como entero
+            const rounded = Math.round(num * Math.pow(10, decimals)) / Math.pow(10, decimals);
+            const str = rounded.toFixed(decimals);
+            const decimal = Math.abs(rounded - Math.round(rounded));
+
+            if (decimal < Math.pow(10, -decimals)) {
+                return Math.round(rounded).toString();
+            }
+
+            // Remover ceros al final
+            return str.replace(/\.?0+$/, '');
+        }
+
         // ====================================================================
         function plotGraphicalSolution(result, model) {
             try {
@@ -1419,7 +1436,7 @@
                     '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd'
                 ];
 
-                // Región factible (polígono con sombreado azul)
+                // Región factible (polígono con sombreado azul) - PRIMERO en datasets para que quede atrás
                 if (pts.length >= 3) {
                     const center = {
                         x: xCoords.reduce((a, b) => a + b, 0) / xCoords.length,
@@ -1436,17 +1453,36 @@
                     }));
                     polyPoints.push(polyPoints[0]); // Cerrar polígono
 
+                    // Crear dataset de polígono con muchos puntos intermedios para llenar bien
+                    const filledPolyPoints = [];
+                    for (let i = 0; i < polyPoints.length - 1; i++) {
+                        filledPolyPoints.push(polyPoints[i]);
+                        // Interpolar puntos intermedios
+                        for (let t = 0.1; t < 1; t += 0.1) {
+                            filledPolyPoints.push({
+                                x: polyPoints[i].x + t * (polyPoints[i + 1].x - polyPoints[i].x),
+                                y: polyPoints[i].y + t * (polyPoints[i + 1].y - polyPoints[i].y)
+                            });
+                        }
+                    }
+                    filledPolyPoints.push(polyPoints[polyPoints.length - 1]);
+
                     datasets.push({
-                        label: 'Región Factible',
-                        data: polyPoints,
-                        borderColor: 'rgba(100,150,200,0.8)',
+                        label: '',  // Etiqueta vacía para que no aparezca en hover
+                        data: filledPolyPoints,
+                        borderColor: 'rgba(100,150,200,0.9)',
                         backgroundColor: 'rgba(100,180,255,0.5)',
-                        borderWidth: 2,
+                        borderWidth: 2.5,
                         fill: true,
-                        tension: 0,
+                        tension: 0.3,
                         showLine: true,
                         pointRadius: 0,
-                        borderDash: []
+                        pointHoverRadius: 0,
+                        borderDash: [],
+                        segment: {
+                            borderColor: ctx => 'rgba(100,150,200,0.9)',
+                            borderDash: []
+                        }
                     });
                 }
 
@@ -1472,11 +1508,11 @@
                             equationStr += ` = ${rhs.toFixed(2)}`;
 
                             const lineColor = constraintColors[idx % constraintColors.length];
+                            let linePoints = [];
 
                             if (Math.abs(b) > 1e-12) {
                                 // Línea: y = (rhs - a*x) / b
-                                const linePoints = [];
-                                const steps = 100;
+                                const steps = 200;
                                 const step = (xMax - xMin) / steps;
                                 for (let x = xMin; x <= xMax; x += step) {
                                     const y = (rhs - a * x) / b;
@@ -1484,27 +1520,17 @@
                                         linePoints.push({ x: x.toFixed(2), y: y.toFixed(2) });
                                     }
                                 }
-
-                                if (linePoints.length > 0) {
-                                    datasets.push({
-                                        label: equationStr,
-                                        data: linePoints,
-                                        borderColor: lineColor,
-                                        borderWidth: 2.5,
-                                        borderDash: [],
-                                        pointRadius: 0,
-                                        fill: false,
-                                        tension: 0,
-                                        showLine: true
-                                    });
-                                }
                             } else if (Math.abs(a) > 1e-12) {
                                 // Línea vertical: x = rhs / a
                                 const xv = rhs / a;
-                                const linePoints = [
-                                    { x: xv.toFixed(2), y: (yMin - yPad).toFixed(2) },
-                                    { x: xv.toFixed(2), y: (yMax + yPad).toFixed(2) }
-                                ];
+                                const steps = 200;
+                                const step = (yMax - yMin) / steps;
+                                for (let y = yMin; y <= yMax; y += step) {
+                                    linePoints.push({ x: xv.toFixed(2), y: y.toFixed(2) });
+                                }
+                            }
+
+                            if (linePoints.length > 0) {
                                 datasets.push({
                                     label: equationStr,
                                     data: linePoints,
@@ -1512,9 +1538,15 @@
                                     borderWidth: 2.5,
                                     borderDash: [],
                                     pointRadius: 0,
+                                    pointHoverRadius: 0,
                                     fill: false,
                                     tension: 0,
-                                    showLine: true
+                                    showLine: true,
+                                    tooltip: {
+                                        callbacks: {
+                                            label: () => equationStr
+                                        }
+                                    }
                                 });
                             }
                         } catch (e) {
@@ -1529,7 +1561,7 @@
                     data: pts.map((p, i) => ({
                         x: p[0].toFixed(3),
                         y: p[1].toFixed(3),
-                        vertex: `V${i + 1}`
+                        vertexLabel: `V${i + 1}`
                     })),
                     borderColor: '#000000',
                     backgroundColor: '#000000',
@@ -1537,7 +1569,12 @@
                     pointRadius: 6,
                     pointHoverRadius: 8,
                     showLine: false,
-                    fill: false
+                    fill: false,
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => context.raw.vertexLabel
+                        }
+                    }
                 });
 
                 // Punto óptimo destacado
@@ -1551,7 +1588,7 @@
                         data: [{
                             x: op[0].toFixed(3),
                             y: op[1].toFixed(3),
-                            optimal: true
+                            optimalLabel: '★ Óptimo'
                         }],
                         borderColor: '#cc0000',
                         backgroundColor: '#ff6b35',
@@ -1560,7 +1597,12 @@
                         pointStyle: 'star',
                         pointHoverRadius: 15,
                         showLine: false,
-                        fill: false
+                        fill: false,
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => context.raw.optimalLabel
+                            }
+                        }
                     });
                 }
 
@@ -1581,13 +1623,30 @@
                                 labels: {
                                     boxWidth: 15,
                                     font: { size: 10 },
-                                    padding: 10
+                                    padding: 10,
+                                    filter: (item) => item.text !== '' // Ocultar etiqueta vacía de región factible
                                 }
                             },
                             title: {
                                 display: true,
                                 text: 'Visualización del Método Gráfico',
                                 font: { size: 18, weight: 'bold' }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: (context) => {
+                                        // Si el dataset tiene tooltip callbacks personalizados, usarlos
+                                        if (context.dataset.tooltip?.callbacks?.label) {
+                                            return context.dataset.tooltip.callbacks.label(context);
+                                        }
+                                        return context.dataset.label || '';
+                                    }
+                                },
+                                backgroundColor: 'rgba(0,0,0,0.8)',
+                                padding: 12,
+                                titleFont: { size: 12 },
+                                bodyFont: { size: 11 },
+                                displayColors: false
                             }
                         },
                         scales: {
