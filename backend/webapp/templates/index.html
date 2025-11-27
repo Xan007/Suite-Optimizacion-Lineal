@@ -867,7 +867,6 @@
                             ${step.is_optimal ? '<strong style="color: #ff6b35;"> ⭐ ÓPTIMO</strong>' : ''}
                         `;
                         stepCard.appendChild(header);
-
                         const value = document.createElement('div');
                         value.style.fontSize = '0.95rem';
                         value.textContent = `Valor Objetivo: ${step.objective_value.toFixed(6)}`;
@@ -877,269 +876,278 @@
                     });
                 } else {
                     // Para Simplex y otros métodos, mostrar tablas detalladas
-                    result.steps.forEach(step => {
-                        const stepCard = document.createElement('div');
-                        stepCard.className = 'step-iteration';
-                        stepCard.style.marginBottom = '2rem';
-                        stepCard.style.padding = '1.5rem';
-                        stepCard.style.border = '1px solid #ddd';
-                        stepCard.style.borderRadius = '8px';
+                    if (result.steps && Array.isArray(result.steps)) {
+                        result.steps.forEach(step => {
+                            const stepCard = document.createElement('div');
+                            stepCard.className = 'step-iteration';
+                            stepCard.style.marginBottom = '2rem';
+                            stepCard.style.padding = '1.5rem';
+                            stepCard.style.border = '1px solid #ddd';
+                            stepCard.style.borderRadius = '8px';
 
-                        // Encabezado de iteración
-                        const header = document.createElement('div');
-                        header.className = 'step-header';
-                        header.style.fontSize = '1.1rem';
-                        header.style.fontWeight = '700';
-                        header.style.marginBottom = '1rem';
-                        header.style.color = '#0066cc';
-                        header.textContent = `Iteración ${step.iteration}`;
-                        stepCard.appendChild(header);
+                            // Encabezado de iteración
+                            const header = document.createElement('div');
+                            header.className = 'step-header';
+                            header.style.fontSize = '1.1rem';
+                            header.style.fontWeight = '700';
+                            header.style.marginBottom = '1rem';
+                            header.style.color = '#0066cc';
+                            header.textContent = `Iteración ${step.iteration}`;
+                            stepCard.appendChild(header);
 
-                        // Info de pivote
-                        if (step.entering_variable && step.leaving_variable) {
-                            const pivotInfo = document.createElement('div');
-                            pivotInfo.style.marginBottom = '1rem';
-                            pivotInfo.style.padding = '0.8rem';
-                            pivotInfo.style.backgroundColor = '#f0f4ff';
-                            pivotInfo.style.borderRadius = '6px';
-                            pivotInfo.innerHTML = `
+                            // Info de pivote
+                            if (step.entering_variable && step.leaving_variable) {
+                                const pivotInfo = document.createElement('div');
+                                pivotInfo.style.marginBottom = '1rem';
+                                pivotInfo.style.padding = '0.8rem';
+                                pivotInfo.style.backgroundColor = '#f0f4ff';
+                                pivotInfo.style.borderRadius = '6px';
+                                pivotInfo.innerHTML = `
                                 <div style="font-weight: 600; margin-bottom: 0.3rem;">Operación Pivote</div>
                                 <div>Variable Entrante: <strong>${step.entering_variable}</strong></div>
                                 <div>Variable Saliente: <strong>${step.leaving_variable}</strong></div>
                                 <div>Elemento Pivote: <strong>${formatNumber(step.pivot_element, 4)}</strong></div>
                                 <div>Fila Pivote: ${step.leaving_row}, Columna Pivote: ${step.entering_col}</div>
                             `;
-                            stepCard.appendChild(pivotInfo);
-                        }
+                                stepCard.appendChild(pivotInfo);
+                            }
 
-                        // Tabla ANTES
-                        if (step.tableau_before) {
-                            const beforeTitle = document.createElement('div');
-                            beforeTitle.style.fontWeight = '600';
-                            beforeTitle.style.marginTop = '1rem';
-                            beforeTitle.style.marginBottom = '0.5rem';
-                            beforeTitle.textContent = 'Tabla Antes del Pivote:';
-                            stepCard.appendChild(beforeTitle);
+                            // Tabla ANTES
+                            if (step.tableau_before) {
+                                const beforeTitle = document.createElement('div');
+                                beforeTitle.style.fontWeight = '600';
+                                beforeTitle.style.marginTop = '1rem';
+                                beforeTitle.style.marginBottom = '0.5rem';
+                                beforeTitle.textContent = 'Tabla Antes del Pivote:';
+                                stepCard.appendChild(beforeTitle);
 
-                            const beforeTable = document.createElement('table');
-                            beforeTable.style.width = '100%';
-                            beforeTable.style.borderCollapse = 'collapse';
-                            beforeTable.style.fontSize = '0.85rem';
-                            beforeTable.style.marginBottom = '1rem';
-                            beforeTable.style.overflowX = 'auto';
-                            beforeTable.style.display = 'block';
+                                const beforeTable = document.createElement('table');
+                                beforeTable.style.width = '100%';
+                                beforeTable.style.borderCollapse = 'collapse';
+                                beforeTable.style.fontSize = '0.85rem';
+                                beforeTable.style.marginBottom = '1rem';
+                                beforeTable.style.overflowX = 'auto';
+                                beforeTable.style.display = 'block';
 
-                            // Headers
-                            const thead = document.createElement('thead');
-                            const headerRow = document.createElement('tr');
-                            headerRow.style.backgroundColor = '#f5f5f5';
+                                // Headers
+                                const thead = document.createElement('thead');
+                                const headerRow = document.createElement('tr');
+                                headerRow.style.backgroundColor = '#f5f5f5';
 
-                            const baseHeader = document.createElement('th');
-                            baseHeader.textContent = 'Base';
-                            baseHeader.style.padding = '0.4rem';
-                            baseHeader.style.border = '1px solid #ddd';
-                            baseHeader.style.textAlign = 'left';
-                            headerRow.appendChild(baseHeader);
+                                const baseHeader = document.createElement('th');
+                                baseHeader.textContent = 'Base';
+                                baseHeader.style.padding = '0.4rem';
+                                baseHeader.style.border = '1px solid #ddd';
+                                baseHeader.style.textAlign = 'left';
+                                headerRow.appendChild(baseHeader);
 
-                            if (step.var_names) {
-                                step.var_names.forEach(v => {
+                                if (step.var_names) {
+                                    step.var_names.forEach(v => {
+                                        const th = document.createElement('th');
+                                        th.textContent = v;
+                                        th.style.padding = '0.4rem';
+                                        th.style.border = '1px solid #ddd';
+                                        th.style.textAlign = 'center';
+                                        th.style.fontWeight = '600';
+                                        headerRow.appendChild(th);
+                                    });
+                                }
+
+                                // Slack variables headers
+                                const colsToSkip = step.var_names ? step.var_names.length : 0;
+                                for (let i = 0; i < step.tableau_before[0].length - colsToSkip - 1; i++) {
                                     const th = document.createElement('th');
-                                    th.textContent = v;
+                                    th.textContent = `s${i + 1}`;
                                     th.style.padding = '0.4rem';
                                     th.style.border = '1px solid #ddd';
                                     th.style.textAlign = 'center';
                                     th.style.fontWeight = '600';
                                     headerRow.appendChild(th);
+                                }
+
+                                const rhsHeader = document.createElement('th');
+                                rhsHeader.textContent = 'RHS';
+                                rhsHeader.style.padding = '0.4rem';
+                                rhsHeader.style.border = '1px solid #ddd';
+                                rhsHeader.style.textAlign = 'center';
+                                rhsHeader.style.fontWeight = '600';
+                                headerRow.appendChild(rhsHeader);
+
+                                thead.appendChild(headerRow);
+                                beforeTable.appendChild(thead);
+
+                                // Body
+                                const tbody = document.createElement('tbody');
+                                step.tableau_before.forEach((row, rowIdx) => {
+                                    const tr = document.createElement('tr');
+                                    tr.style.backgroundColor = rowIdx === step.leaving_row ? '#ffe0e0' : '#ffffff';
+
+                                    const baseCell = document.createElement('td');
+                                    baseCell.textContent = step.basis_before[rowIdx];
+                                    baseCell.style.padding = '0.4rem';
+                                    baseCell.style.border = '1px solid #ddd';
+                                    baseCell.style.fontWeight = '600';
+                                    tr.appendChild(baseCell);
+
+                                    row.forEach((val, colIdx) => {
+                                        const td = document.createElement('td');
+                                        td.textContent = formatNumber(val, 4);
+                                        td.style.padding = '0.4rem';
+                                        td.style.border = '1px solid #ddd';
+                                        td.style.textAlign = 'center';
+                                        if (rowIdx === step.leaving_row && colIdx === step.entering_col) {
+                                            td.style.backgroundColor = '#ffcc00';
+                                            td.style.fontWeight = '700';
+                                        }
+                                        tr.appendChild(td);
+                                    });
+                                    tbody.appendChild(tr);
                                 });
-                            }
 
-                            // Slack variables headers
-                            for (let i = 0; i < step.tableau_before[0].length - step.var_names.length - 1; i++) {
-                                const th = document.createElement('th');
-                                th.textContent = `s${i + 1}`;
-                                th.style.padding = '0.4rem';
-                                th.style.border = '1px solid #ddd';
-                                th.style.textAlign = 'center';
-                                th.style.fontWeight = '600';
-                                headerRow.appendChild(th);
-                            }
-
-                            const rhsHeader = document.createElement('th');
-                            rhsHeader.textContent = 'RHS';
-                            rhsHeader.style.padding = '0.4rem';
-                            rhsHeader.style.border = '1px solid #ddd';
-                            rhsHeader.style.textAlign = 'center';
-                            rhsHeader.style.fontWeight = '600';
-                            headerRow.appendChild(rhsHeader);
-
-                            thead.appendChild(headerRow);
-                            beforeTable.appendChild(thead);
-
-                            // Body
-                            const tbody = document.createElement('tbody');
-                            step.tableau_before.forEach((row, rowIdx) => {
-                                const tr = document.createElement('tr');
-                                tr.style.backgroundColor = rowIdx === step.leaving_row ? '#ffe0e0' : '#ffffff';
-
-                                const baseCell = document.createElement('td');
-                                baseCell.textContent = step.basis_before[rowIdx];
-                                baseCell.style.padding = '0.4rem';
-                                baseCell.style.border = '1px solid #ddd';
-                                baseCell.style.fontWeight = '600';
-                                tr.appendChild(baseCell);
-
-                                row.forEach((val, colIdx) => {
+                                // Fila de objetivo
+                                const objRow = document.createElement('tr');
+                                objRow.style.backgroundColor = '#e0e0ff';
+                                const objLabel = document.createElement('td');
+                                objLabel.textContent = 'Z';
+                                objLabel.style.padding = '0.4rem';
+                                objLabel.style.border = '1px solid #ddd';
+                                objLabel.style.fontWeight = '600';
+                                objRow.appendChild(objLabel);
+                                step.obj_row_before.forEach((val, idx) => {
                                     const td = document.createElement('td');
                                     td.textContent = formatNumber(val, 4);
                                     td.style.padding = '0.4rem';
                                     td.style.border = '1px solid #ddd';
                                     td.style.textAlign = 'center';
-                                    if (rowIdx === step.leaving_row && colIdx === step.entering_col) {
-                                        td.style.backgroundColor = '#ffcc00';
+                                    if (idx === step.entering_col) {
+                                        td.style.backgroundColor = '#ffff99';
                                         td.style.fontWeight = '700';
                                     }
-                                    tr.appendChild(td);
+                                    objRow.appendChild(td);
                                 });
-                                tbody.appendChild(tr);
-                            });
+                                tbody.appendChild(objRow);
 
-                            // Fila de objetivo
-                            const objRow = document.createElement('tr');
-                            objRow.style.backgroundColor = '#e0e0ff';
-                            const objLabel = document.createElement('td');
-                            objLabel.textContent = 'Z';
-                            objLabel.style.padding = '0.4rem';
-                            objLabel.style.border = '1px solid #ddd';
-                            objLabel.style.fontWeight = '600';
-                            objRow.appendChild(objLabel);
-                            step.obj_row_before.forEach((val, idx) => {
-                                const td = document.createElement('td');
-                                td.textContent = formatNumber(val, 4);
-                                td.style.padding = '0.4rem';
-                                td.style.border = '1px solid #ddd';
-                                td.style.textAlign = 'center';
-                                if (idx === step.entering_col) {
-                                    td.style.backgroundColor = '#ffff99';
-                                    td.style.fontWeight = '700';
+                                beforeTable.appendChild(tbody);
+                                stepCard.appendChild(beforeTable);
+                            }
+
+                            // Tabla DESPUÉS
+                            if (step.tableau_after) {
+                                const afterTitle = document.createElement('div');
+                                afterTitle.style.fontWeight = '600';
+                                afterTitle.style.marginTop = '1rem';
+                                afterTitle.style.marginBottom = '0.5rem';
+                                afterTitle.textContent = 'Tabla Después del Pivote:';
+                                stepCard.appendChild(afterTitle);
+
+                                const afterTable = document.createElement('table');
+                                afterTable.style.width = '100%';
+                                afterTable.style.borderCollapse = 'collapse';
+                                afterTable.style.fontSize = '0.85rem';
+                                afterTable.style.display = 'block';
+                                afterTable.style.overflowX = 'auto';
+
+                                // Headers
+                                const thead = document.createElement('thead');
+                                const headerRow = document.createElement('tr');
+                                headerRow.style.backgroundColor = '#f5f5f5';
+
+                                const baseHeader = document.createElement('th');
+                                baseHeader.textContent = 'Base';
+                                baseHeader.style.padding = '0.4rem';
+                                baseHeader.style.border = '1px solid #ddd';
+                                baseHeader.style.textAlign = 'left';
+                                headerRow.appendChild(baseHeader);
+
+                                if (step.var_names) {
+                                    step.var_names.forEach(v => {
+                                        const th = document.createElement('th');
+                                        th.textContent = v;
+                                        th.style.padding = '0.4rem';
+                                        th.style.border = '1px solid #ddd';
+                                        th.style.textAlign = 'center';
+                                        th.style.fontWeight = '600';
+                                        headerRow.appendChild(th);
+                                    });
                                 }
-                                objRow.appendChild(td);
-                            });
-                            tbody.appendChild(objRow);
 
-                            beforeTable.appendChild(tbody);
-                            stepCard.appendChild(beforeTable);
-                        }
-
-                        // Tabla DESPUÉS
-                        if (step.tableau_after) {
-                            const afterTitle = document.createElement('div');
-                            afterTitle.style.fontWeight = '600';
-                            afterTitle.style.marginTop = '1rem';
-                            afterTitle.style.marginBottom = '0.5rem';
-                            afterTitle.textContent = 'Tabla Después del Pivote:';
-                            stepCard.appendChild(afterTitle);
-
-                            const afterTable = document.createElement('table');
-                            afterTable.style.width = '100%';
-                            afterTable.style.borderCollapse = 'collapse';
-                            afterTable.style.fontSize = '0.85rem';
-                            afterTable.style.display = 'block';
-                            afterTable.style.overflowX = 'auto';
-
-                            // Headers
-                            const thead = document.createElement('thead');
-                            const headerRow = document.createElement('tr');
-                            headerRow.style.backgroundColor = '#f5f5f5';
-
-                            const baseHeader = document.createElement('th');
-                            baseHeader.textContent = 'Base';
-                            baseHeader.style.padding = '0.4rem';
-                            baseHeader.style.border = '1px solid #ddd';
-                            baseHeader.style.textAlign = 'left';
-                            headerRow.appendChild(baseHeader);
-
-                            if (step.var_names) {
-                                step.var_names.forEach(v => {
+                                for (let i = 0; i < step.tableau_after[0].length - (step.var_names ? step.var_names.length : 0) - 1; i++) {
                                     const th = document.createElement('th');
-                                    th.textContent = v;
+                                    th.textContent = `s${i + 1}`;
                                     th.style.padding = '0.4rem';
                                     th.style.border = '1px solid #ddd';
                                     th.style.textAlign = 'center';
                                     th.style.fontWeight = '600';
                                     headerRow.appendChild(th);
+                                }
+
+                                const rhsHeader = document.createElement('th');
+                                rhsHeader.textContent = 'RHS';
+                                rhsHeader.style.padding = '0.4rem';
+                                rhsHeader.style.border = '1px solid #ddd';
+                                rhsHeader.style.textAlign = 'center';
+                                rhsHeader.style.fontWeight = '600';
+                                headerRow.appendChild(rhsHeader);
+
+                                thead.appendChild(headerRow);
+                                afterTable.appendChild(thead);
+
+                                // Body
+                                const tbody = document.createElement('tbody');
+                                step.tableau_after.forEach((row, rowIdx) => {
+                                    const tr = document.createElement('tr');
+                                    tr.style.backgroundColor = '#ffffff';
+
+                                    const baseCell = document.createElement('td');
+                                    baseCell.textContent = step.basis_after[rowIdx];
+                                    baseCell.style.padding = '0.4rem';
+                                    baseCell.style.border = '1px solid #ddd';
+                                    baseCell.style.fontWeight = '600';
+                                    tr.appendChild(baseCell);
+
+                                    row.forEach((val, colIdx) => {
+                                        const td = document.createElement('td');
+                                        td.textContent = formatNumber(val, 4);
+                                        td.style.padding = '0.4rem';
+                                        td.style.border = '1px solid #ddd';
+                                        td.style.textAlign = 'center';
+                                        tr.appendChild(td);
+                                    });
+                                    tbody.appendChild(tr);
                                 });
-                            }
 
-                            for (let i = 0; i < step.tableau_after[0].length - step.var_names.length - 1; i++) {
-                                const th = document.createElement('th');
-                                th.textContent = `s${i + 1}`;
-                                th.style.padding = '0.4rem';
-                                th.style.border = '1px solid #ddd';
-                                th.style.textAlign = 'center';
-                                th.style.fontWeight = '600';
-                                headerRow.appendChild(th);
-                            }
-
-                            const rhsHeader = document.createElement('th');
-                            rhsHeader.textContent = 'RHS';
-                            rhsHeader.style.padding = '0.4rem';
-                            rhsHeader.style.border = '1px solid #ddd';
-                            rhsHeader.style.textAlign = 'center';
-                            rhsHeader.style.fontWeight = '600';
-                            headerRow.appendChild(rhsHeader);
-
-                            thead.appendChild(headerRow);
-                            afterTable.appendChild(thead);
-
-                            // Body
-                            const tbody = document.createElement('tbody');
-                            step.tableau_after.forEach((row, rowIdx) => {
-                                const tr = document.createElement('tr');
-                                tr.style.backgroundColor = '#ffffff';
-
-                                const baseCell = document.createElement('td');
-                                baseCell.textContent = step.basis_after[rowIdx];
-                                baseCell.style.padding = '0.4rem';
-                                baseCell.style.border = '1px solid #ddd';
-                                baseCell.style.fontWeight = '600';
-                                tr.appendChild(baseCell);
-
-                                row.forEach((val, colIdx) => {
+                                // Fila de objetivo
+                                const objRow = document.createElement('tr');
+                                objRow.style.backgroundColor = '#e0e0ff';
+                                const objLabel = document.createElement('td');
+                                objLabel.textContent = 'Z';
+                                objLabel.style.padding = '0.4rem';
+                                objLabel.style.border = '1px solid #ddd';
+                                objLabel.style.fontWeight = '600';
+                                objRow.appendChild(objLabel);
+                                step.obj_row_after.forEach((val, idx) => {
                                     const td = document.createElement('td');
                                     td.textContent = formatNumber(val, 4);
                                     td.style.padding = '0.4rem';
                                     td.style.border = '1px solid #ddd';
                                     td.style.textAlign = 'center';
-                                    tr.appendChild(td);
+                                    objRow.appendChild(td);
                                 });
-                                tbody.appendChild(tr);
-                            });
+                                tbody.appendChild(objRow);
 
-                            // Fila de objetivo
-                            const objRow = document.createElement('tr');
-                            objRow.style.backgroundColor = '#e0e0ff';
-                            const objLabel = document.createElement('td');
-                            objLabel.textContent = 'Z';
-                            objLabel.style.padding = '0.4rem';
-                            objLabel.style.border = '1px solid #ddd';
-                            objLabel.style.fontWeight = '600';
-                            objRow.appendChild(objLabel);
-                            step.obj_row_after.forEach((val, idx) => {
-                                const td = document.createElement('td');
-                                td.textContent = formatNumber(val, 4);
-                                td.style.padding = '0.4rem';
-                                td.style.border = '1px solid #ddd';
-                                td.style.textAlign = 'center';
-                                objRow.appendChild(td);
-                            });
-                            tbody.appendChild(objRow);
+                                afterTable.appendChild(tbody);
+                                stepCard.appendChild(afterTable);
+                            }
 
-                            afterTable.appendChild(tbody);
-                            stepCard.appendChild(afterTable);
-                        }
-
-                        stepsContainer.appendChild(stepCard);
-                    });
+                            stepsContainer.appendChild(stepCard);
+                        });
+                    } else {
+                        const noStepsMsg = document.createElement('div');
+                        noStepsMsg.style.padding = '1rem';
+                        noStepsMsg.style.color = '#ff6b35';
+                        noStepsMsg.textContent = 'No hay pasos disponibles para mostrar.';
+                        stepsContainer.appendChild(noStepsMsg);
+                    }
                 }
 
                 content.appendChild(stepsContainer);

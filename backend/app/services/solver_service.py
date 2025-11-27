@@ -9,6 +9,7 @@ import numpy as np
 from app.schemas.analyze_schema import MathematicalModel
 from app.core.logger import logger
 from app.services.graphication_service import GraphicationService
+from app.services.big_m_method import BigMMethod
 
 try:
     import pulp
@@ -27,21 +28,79 @@ class SolverService:
 
     def determine_applicable_methods(self, model: MathematicalModel) -> Tuple[List[str], Dict[str, str]]:
         """Retorna métodos sugeridos y no aplicables."""
+        # Detectar si el problema necesita el método de la Gran M
+        needs_big_m = self._needs_big_m(model)
+        
         suggested = ["simplex"]
+        if needs_big_m:
+            suggested.insert(0, "big_m")
+        
         not_applicable = {"graphical": "Más de 2 variables"} if len(model.variables) > 2 else {}
         if len(model.variables) <= 2:
             suggested.append("graphical")
         return suggested, not_applicable
 
+    def _needs_big_m(self, model: MathematicalModel) -> bool:
+        """Verifica si el problema tiene restricciones >= o = que requieren Gran M."""
+        if not model.constraints:
+            return False
+        
+        for constraint in model.constraints:
+            # Filtrar restricciones de no-negatividad
+            if any(f"{v} >= 0" in constraint or f"{v} <= 0" in constraint 
+                   for v in model.variables.keys()):
+                continue
+            
+            if ">=" in constraint or "=" in constraint:
+                return True
+        
+        return False
+
     def solve(self, model: MathematicalModel, method: str = "simplex") -> Dict[str, Any]:
-        """Resuelve usando Simplex tableau con visualización didáctica."""
+        """Resuelve usando Simplex tableau o Gran M según el método."""
         try:
-            return self._simplex_tableau(model) if method == "simplex" else \
-                   self._graphical_method(model) if method == "graphical" else \
-                   {"success": False, "error": f"Método no soportado: {method}"}
+            if method == "big_m":
+                return self._solve_big_m(model)
+            elif method == "simplex":
+                return self._simplex_tableau(model)
+            elif method == "graphical":
+                return self._graphical_method(model)
+            else:
+                return {"success": False, "error": f"Método no soportado: {method}"}
         except Exception as e:
             logger.error(f"Error en solve: {str(e)}", exc_info=True)
             return {"success": False, "error": str(e)}
+
+    def _solve_big_m(self, model: MathematicalModel) -> Dict[str, Any]:
+        """Resuelve usando el método de la Gran M."""
+        try:
+            big_m_solver = BigMMethod()
+            result = big_m_solver.solve(model)
+            return self._convert_numpy_types(result)
+        except Exception as e:
+            logger.error(f"Error en _solve_big_m: {str(e)}", exc_info=True)
+            return {"success": False, "error": str(e)}
+
+    def _interpret_big_m_solution(self, model: MathematicalModel, result: Dict[str, Any]) -> str:
+        """Genera interpretación de la solución obtenida con Gran M."""
+        interpretation = "**Solución por el Método de la Gran M:**\n\n"
+        
+        if not result.get("success"):
+            return interpretation + f"Estado: {result.get('status', 'Desconocido')}"
+        
+        interpretation += f"**Valor Óptimo:** {result.get('objective_value', 0):.4g}\n\n"
+        
+        interpretation += "**Solución Óptima:**\n"
+        variables = result.get("variables", {})
+        for var, value in variables.items():
+            interpretation += f"- {var} = {value:.4g}\n"
+        
+        interpretation += f"\n**Iteraciones:** {result.get('iterations', 0)}\n"
+        interpretation += f"**Variables Artificiales Usadas:** {len(result.get('artificial_variables', []))}\n"
+        interpretation += f"**Variables de Holgura:** {len(result.get('slack_variables', []))}\n"
+        interpretation += f"**Variables de Exceso:** {len(result.get('excess_variables', []))}\n"
+        
+        return interpretation
 
     def _convert_numpy_types(self, obj: Any) -> Any:
         """Convierte tipos NumPy a tipos nativas de Python para JSON serialización."""
@@ -178,7 +237,7 @@ class SolverService:
                 b.append(float(rhs_val))
             
             if not A:
-                return {"success": False, "error": "No hay restricciones estructurales"}
+                return {"success": False, "error": "No hay restricciones estructurales", "steps": []}
             
             A, b, m = np.array(A), np.array(b), len(b)
             tableau = np.hstack([A, np.eye(m), b.reshape(-1, 1)])
@@ -197,7 +256,7 @@ class SolverService:
                 leaving_row = np.argmin(ratios)
                 
                 if ratios[leaving_row] == float('inf'):
-                    return {"success": False, "error": "Problema ilimitado"}
+                    return {"success": False, "error": "Problema ilimitado", "steps": []}
                 
                 tableau_before, obj_row_before, basis_before = tableau.copy(), obj_row.copy(), basis[:]
                 pivot = tableau[leaving_row, entering_col]
@@ -253,7 +312,7 @@ class SolverService:
             
         except Exception as e:
             logger.error(f"Error en _simplex_tableau: {str(e)}", exc_info=True)
-            return {"success": False, "error": str(e)}
+            return {"success": False, "error": str(e), "steps": []}
 
     def _graphical_method(self, model: MathematicalModel) -> Dict[str, Any]:
         """Método gráfico para 2 variables con cálculo correcto de vértices y graficación."""
@@ -376,6 +435,7 @@ class SolverService:
                 "feasible_points": evaluated_points,
                 "constraints_info": constraints_info,
                 "equations_latex": equations_latex,
+                "steps": [],
                 "objective_coefficients": {x_name: float(obj_expr.coeff(x, 1) or 0), 
                                           y_name: float(obj_expr.coeff(y, 1) or 0)},
                 "explanation": f"Método Gráfico: Se evaluaron {len(feasible_points)} vértices de la región factible"
@@ -397,4 +457,4 @@ class SolverService:
             
         except Exception as e:
             logger.error(f"Error en _graphical_method: {str(e)}", exc_info=True)
-            return {"success": False, "error": str(e)}
+            return {"success": False, "error": str(e), "steps": []}
