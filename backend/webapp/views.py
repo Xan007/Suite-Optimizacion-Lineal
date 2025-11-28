@@ -207,8 +207,20 @@ def solve_model(request: HttpRequest) -> JsonResponse:
         if not model_dict:
             return _json_response({'detail': "Falta campo 'model' en payload"}, status=400)
         
+        model = MathematicalModel(**model_dict)
+        method = payload.get('method', 'simplex')
+        
+        # Validación: problemas de minimización solo pueden usar dual_simplex o big_m
+        if model.objective == "min" and method not in ["dual_simplex", "big_m"]:
+            return _json_response({
+                'success': False,
+                'detail': f"Los problemas de minimización solo pueden resolverse con el Método Simplex Dual o el Método de la Gran M. El método '{method}' no está disponible para minimización.",
+                'allowed_methods': ["dual_simplex", "big_m"],
+                'objective_type': 'min'
+            }, status=400)
+        
         from app.services.solver_service import SolverService
-        result = SolverService().solve(MathematicalModel(**model_dict), method=payload.get('method', 'simplex'))
+        result = SolverService().solve(model, method=method)
         
         return _json_response({'success': True, 'result': result})
     except Exception as e:

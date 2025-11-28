@@ -1,0 +1,465 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Método Simplex Dual - Visualización</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .iteration-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .iteration-header {
+            background: #4CAF50;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        
+        .tableau-table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        
+        .tableau-table th {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .tableau-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+        
+        .tableau-table tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .basis-column {
+            background-color: #FFC107;
+            font-weight: bold;
+        }
+        
+        .pivot-cell {
+            background-color: #ff4444 !important;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1em;
+            border: 3px solid #cc0000 !important;
+        }
+        
+        .pivot-row {
+            background-color: #ffcccc;
+        }
+        
+        .pivot-column {
+            background-color: #ccccff;
+        }
+        
+        .negative-rhs {
+            background-color: #ff9800;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .slack-var {
+            background-color: #e1bee7;
+        }
+        
+        .explanation-box {
+            background-color: #e3f2fd;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        
+        .dual-ratios-box {
+            background-color: #fff3e0;
+            border-left: 4px solid #ff9800;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        
+        .ratios-table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .ratios-table th,
+        .ratios-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        
+        .ratios-table th {
+            background-color: #ff9800;
+            color: white;
+        }
+        
+        .minimum-ratio {
+            background-color: #4CAF50;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .status-optimal {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .status-infeasible {
+            background-color: #f44336;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .variable-addition {
+            background-color: #f1f8e9;
+            border: 2px dashed #8bc34a;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        
+        .variable-addition h4 {
+            color: #558b2f;
+            margin-top: 0;
+        }
+        
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #fafafa;
+            border-radius: 5px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .legend-color {
+            width: 30px;
+            height: 20px;
+            border: 1px solid #999;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="text-align: center; color: #333;">Método Simplex Dual - Solución Paso a Paso</h1>
+    
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #ff4444;"></div>
+            <span>Elemento Pivote</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #ffcccc;"></div>
+            <span>Fila Pivote</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #ccccff;"></div>
+            <span>Columna Pivote</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #ff9800;"></div>
+            <span>RHS Negativo</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #e1bee7;"></div>
+            <span>Variable de Holgura</span>
+        </div>
+    </div>
+
+<div class="iteration-container">
+<div class="iteration-header">Iteración 0: Tableau inicial - Método Simplex Dual</div>
+<div class="variable-addition">
+<h4>📊 Variables de Holgura Agregadas</h4>
+<p>Para convertir las restricciones en ecuaciones, se agregan las siguientes variables de holgura:</p>
+<ul>
+<li><strong>s1</strong> - Variable de holgura</li>
+<li><strong>s2</strong> - Variable de holgura</li>
+</ul>
+<p><em>El método Simplex Dual comienza dual-factible (coeficientes de Z >= 0) pero puede ser primal-infactible (algunos RHS negativos)</em></p>
+</div>
+<div class="explanation-box">
+<h4>📝 Explicación del Paso</h4>
+<p><strong>El método Simplex Dual comienza dual-factible (coeficientes de Z >= 0) pero puede ser primal-infactible (algunos RHS negativos)</strong></p>
+</div>
+<table class="tableau-table">
+<thead><tr>
+<th>Base</th>
+<th >x1</th>
+<th >x2</th>
+<th class="slack-var">s1</th>
+<th class="slack-var">s2</th>
+<th >RHS</th>
+</tr></thead>
+<tbody>
+<tr >
+<td class="basis-column">s1</td>
+<td >-1.0000</td>
+<td >-1.0000</td>
+<td class="slack-var">1.0000</td>
+<td class="slack-var">0</td>
+<td class="negative-rhs">-4.0000</td>
+</tr>
+<tr >
+<td class="basis-column">s2</td>
+<td >-2.0000</td>
+<td >-1.0000</td>
+<td class="slack-var">0</td>
+<td class="slack-var">1.0000</td>
+<td class="negative-rhs">-5.0000</td>
+</tr>
+<tr >
+<td class="basis-column">Z (Función Objetivo)</td>
+<td >2.0000</td>
+<td >3.0000</td>
+<td class="slack-var">0</td>
+<td class="slack-var">0</td>
+<td >0</td>
+</tr>
+</tbody></table>
+<div class="explanation-box">⚠️ Solución Primal-Infactible: 2 RHS negativos restantes</div>
+</div>
+
+<div class="iteration-container">
+<div class="iteration-header">Iteración 1: Iteración 1: Entra x1, Sale s2</div>
+<div class="explanation-box">
+<h4>📝 Explicación del Paso</h4>
+<p><strong>Fila 1 tiene RHS más negativo. Columna 0 tiene razón dual mínima.</strong></p>
+<p>✅ <strong>Variable Entrante:</strong> x1</p>
+<p>❌ <strong>Variable Saliente:</strong> s2</p>
+<p>🎯 <strong>Elemento Pivote:</strong> -2.0000</p>
+<p>📍 <strong>RHS de fila pivote (antes):</strong> -5.0000 (NEGATIVO)</p>
+</div>
+<div class="dual-ratios-box">
+<h4>📊 Cálculo de Razones Duales</h4>
+<p>Razón = |Coeficiente Z / Coeficiente Fila Pivote| (solo para coeficientes negativos en fila pivote)</p>
+<table class="ratios-table">
+<thead><tr>
+<th>Columna</th>
+<th>Coef. Z</th>
+<th>Coef. Fila Pivote</th>
+<th>Razón</th>
+<th>¿Mínima?</th>
+</tr></thead>
+<tbody>
+<tr class="minimum-ratio">
+<td>0</td>
+<td>2.0000</td>
+<td>-2.0000</td>
+<td>1.0000</td>
+<td>✓ SÍ</td>
+</tr>
+<tr >
+<td>1</td>
+<td>3.0000</td>
+<td>-1.0000</td>
+<td>3.0000</td>
+<td>No</td>
+</tr>
+</tbody></table>
+</div>
+<table class="tableau-table">
+<thead><tr>
+<th>Base</th>
+<th class="pivot-column">x1</th>
+<th >x2</th>
+<th class="slack-var">s1</th>
+<th class="slack-var">s2</th>
+<th >RHS</th>
+</tr></thead>
+<tbody>
+<tr >
+<td class="basis-column">s1</td>
+<td class="pivot-column">0</td>
+<td >-0.5000</td>
+<td class="slack-var">1.0000</td>
+<td class="slack-var">-0.5000</td>
+<td class="negative-rhs">-1.5000</td>
+</tr>
+<tr class="pivot-row">
+<td class="basis-column">x1</td>
+<td class="pivot-cell">1.0000</td>
+<td class="pivot-row">0.5000</td>
+<td class="pivot-row slack-var">0</td>
+<td class="pivot-row slack-var">-0.5000</td>
+<td class="pivot-row">2.5000</td>
+</tr>
+<tr >
+<td class="basis-column">Z (Función Objetivo)</td>
+<td class="pivot-column">0</td>
+<td >2.0000</td>
+<td class="slack-var">0</td>
+<td class="slack-var">1.0000</td>
+<td >-5.0000</td>
+</tr>
+</tbody></table>
+<div class="explanation-box">⚠️ Solución Primal-Infactible: 0 RHS negativos restantes</div>
+</div>
+
+<div class="iteration-container">
+<div class="iteration-header">Iteración 2: Iteración 2: Entra s2, Sale s1</div>
+<div class="explanation-box">
+<h4>📝 Explicación del Paso</h4>
+<p><strong>Fila 0 tiene RHS más negativo. Columna 3 tiene razón dual mínima.</strong></p>
+<p>✅ <strong>Variable Entrante:</strong> s2</p>
+<p>❌ <strong>Variable Saliente:</strong> s1</p>
+<p>🎯 <strong>Elemento Pivote:</strong> -0.5000</p>
+<p>📍 <strong>RHS de fila pivote (antes):</strong> -1.5000 (NEGATIVO)</p>
+</div>
+<div class="dual-ratios-box">
+<h4>📊 Cálculo de Razones Duales</h4>
+<p>Razón = |Coeficiente Z / Coeficiente Fila Pivote| (solo para coeficientes negativos en fila pivote)</p>
+<table class="ratios-table">
+<thead><tr>
+<th>Columna</th>
+<th>Coef. Z</th>
+<th>Coef. Fila Pivote</th>
+<th>Razón</th>
+<th>¿Mínima?</th>
+</tr></thead>
+<tbody>
+<tr >
+<td>1</td>
+<td>2.0000</td>
+<td>-0.5000</td>
+<td>4.0000</td>
+<td>No</td>
+</tr>
+<tr class="minimum-ratio">
+<td>3</td>
+<td>1.0000</td>
+<td>-0.5000</td>
+<td>2.0000</td>
+<td>✓ SÍ</td>
+</tr>
+</tbody></table>
+</div>
+<table class="tableau-table">
+<thead><tr>
+<th>Base</th>
+<th >x1</th>
+<th >x2</th>
+<th class="slack-var">s1</th>
+<th class="pivot-column slack-var">s2</th>
+<th >RHS</th>
+</tr></thead>
+<tbody>
+<tr class="pivot-row">
+<td class="basis-column">s2</td>
+<td class="pivot-row">0</td>
+<td class="pivot-row">1.0000</td>
+<td class="pivot-row slack-var">-2.0000</td>
+<td class="pivot-cell slack-var">1.0000</td>
+<td class="pivot-row">3.0000</td>
+</tr>
+<tr >
+<td class="basis-column">x1</td>
+<td >1.0000</td>
+<td >1.0000</td>
+<td class="slack-var">-1.0000</td>
+<td class="pivot-column slack-var">0</td>
+<td >4.0000</td>
+</tr>
+<tr >
+<td class="basis-column">Z (Función Objetivo)</td>
+<td >0</td>
+<td >1.0000</td>
+<td class="slack-var">2.0000</td>
+<td class="pivot-column slack-var">0</td>
+<td >-8.0000</td>
+</tr>
+</tbody></table>
+<div class="status-optimal">✅ Solución Factible (todos RHS ≥ 0)</div>
+</div>
+
+<div class="iteration-container">
+<div class="iteration-header">Iteración 3: Solución final - Estado: optimal</div>
+<div class="explanation-box">
+<h4>📝 Explicación del Paso</h4>
+<p><strong>Todos los RHS son no-negativos: solución primal-factible y dual-factible (óptima)</strong></p>
+</div>
+<table class="tableau-table">
+<thead><tr>
+<th>Base</th>
+<th >x1</th>
+<th >x2</th>
+<th class="slack-var">s1</th>
+<th class="slack-var">s2</th>
+<th >RHS</th>
+</tr></thead>
+<tbody>
+<tr >
+<td class="basis-column">s2</td>
+<td >0</td>
+<td >1.0000</td>
+<td class="slack-var">-2.0000</td>
+<td class="slack-var">1.0000</td>
+<td >3.0000</td>
+</tr>
+<tr >
+<td class="basis-column">x1</td>
+<td >1.0000</td>
+<td >1.0000</td>
+<td class="slack-var">-1.0000</td>
+<td class="slack-var">0</td>
+<td >4.0000</td>
+</tr>
+<tr >
+<td class="basis-column">Z (Función Objetivo)</td>
+<td >0</td>
+<td >1.0000</td>
+<td class="slack-var">2.0000</td>
+<td class="slack-var">0</td>
+<td >-8.0000</td>
+</tr>
+</tbody></table>
+<div class="status-optimal">✅ Solución Factible (todos RHS ≥ 0)</div>
+</div>
+
+
+</body>
+</html>

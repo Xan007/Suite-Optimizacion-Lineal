@@ -51,7 +51,7 @@ class BigMMethod:
     """Método de la Gran M para problemas de programación lineal."""
     
     _TOL = 1e-10
-    _FEASIBLE_TOL = 1e-6
+    _FEASIBLE_TOL = 1e-4  # Tolerancia más permisiva para variables artificiales
     _M_VALUE = 1e6  # Constante grande M (1 millón)
     
     def __init__(self):
@@ -62,6 +62,7 @@ class BigMMethod:
         self.slack_variables: Dict[str, int] = {}
         self.excess_variables: Dict[str, int] = {}
         self.var_map: Dict[str, int] = {}  # Mapeo variable -> índice en tableau
+        self.is_max: bool = True  # Flag para saber si es maximización
         
     def solve(self, model: MathematicalModel) -> Dict[str, Any]:
         """
@@ -83,6 +84,7 @@ class BigMMethod:
             # Validar y preparar el problema
             var_names = list(model.variables.keys())
             is_max = model.objective == "max"
+            self.is_max = is_max  # Guardar para usarlo en la visualización
             
             # Crear símbolos SymPy
             symbols = {name: sp.Symbol(name, real=True, positive=True) for name in var_names}
@@ -173,9 +175,10 @@ class BigMMethod:
                     pivot_element, iteration, tableau_before, basis_before
                 )
             
-            # Verificar infactibilidad
+            # Verificar infactibilidad: una variable artificial está en la base con valor > 0
+            artificial_names = set(self.artificial_variables.keys())
             artificial_in_basis = any(
-                var_name.startswith("a") and abs(tableau[i, -1]) > self._FEASIBLE_TOL
+                var_name in artificial_names and abs(tableau[i, -1]) > self._FEASIBLE_TOL
                 for i, var_name in enumerate(basis)
             )
             
@@ -189,10 +192,13 @@ class BigMMethod:
             
             # Extraer solución
             solution = self._extract_solution(tableau, basis, var_names)
-            obj_value = float(tableau[-1, -1])
             
-            if not is_max:
-                obj_value = -obj_value
+            # Calcular el valor óptimo
+            # El valor en tableau[-1, -1] representa -Z en la forma estándar del Simplex
+            # Para maximización: el valor óptimo es el valor absoluto de tableau[-1, -1]
+            # Para minimización: después de convertir a max y resolver, tomamos el valor absoluto
+            raw_value = float(tableau[-1, -1])
+            obj_value = abs(raw_value)  # Siempre devolver valor positivo
             
             # Generar ecuaciones LaTeX con variables de holgura, exceso y artificiales
             equations_latex = self._generate_equations_latex(
@@ -220,19 +226,30 @@ class BigMMethod:
         """
         Parsea restricciones y retorna lista de (coeficientes, operador, RHS).
         Filtra restricciones de no-negatividad.
+        Maneja casos donde el RHS contiene variables (ej: x1 <= 3*x2).
         """
         constraints_data = []
         
         for constraint_str in constraints:
             constraint_str = constraint_str.strip()
             
-            # Filtrar restricciones de no-negatividad
-            if any(f"{v} >= 0" in constraint_str or f"{v} <= 0" in constraint_str 
-                   for v in var_names):
+            # Filtrar restricciones de no-negatividad (exactamente "xi >= 0" o "xi <= 0")
+            # Usamos una verificación más precisa para evitar falsos positivos
+            is_nonnegativity = False
+            for v in var_names:
+                # Verificar si es exactamente "v >= 0" o "v <= 0" (con posibles espacios)
+                import re
+                pattern_ge = rf'^{re.escape(v)}\s*>=\s*0$'
+                pattern_le = rf'^{re.escape(v)}\s*<=\s*0$'
+                if re.match(pattern_ge, constraint_str) or re.match(pattern_le, constraint_str):
+                    is_nonnegativity = True
+                    break
+            
+            if is_nonnegativity:
                 continue
             
             try:
-                # Parsear: "2*x1 + x2 <= 10"
+                # Parsear: "2*x1 + x2 <= 10" o "x1 <= 3*x2"
                 parts = None
                 for op in ["<=", ">=", "="]:
                     if op in constraint_str:
@@ -245,13 +262,25 @@ class BigMMethod:
                 
                 lhs_str, op, rhs_str = parts
                 lhs_expr = sp.sympify(lhs_str, locals=symbols)
-                rhs_val = float(sp.sympify(rhs_str))
+                rhs_expr = sp.sympify(rhs_str, locals=symbols)
                 
-                # Extraer coeficientes
+                # Mover todo al lado izquierdo: LHS - RHS <= 0 (o >= 0, o = 0)
+                # Esto maneja casos como x1 <= 3*x2 -> x1 - 3*x2 <= 0
+                combined_expr = lhs_expr - rhs_expr
+                
+                # Extraer coeficientes de la expresión combinada
                 coeffs = np.array([
-                    float(lhs_expr.coeff(symbols[v], 1) or 0)
+                    float(combined_expr.coeff(symbols[v], 1) or 0)
                     for v in var_names
                 ])
+                
+                # El RHS ahora es el término constante negado
+                # combined_expr = ax + by + ... + constant, queremos ax + by + ... <= -constant
+                # Entonces rhs_val = -constant
+                constant_term = float(combined_expr.as_coeff_add()[0]) if combined_expr.is_Add else 0
+                # Obtener el término independiente correctamente
+                constant_term = float(combined_expr.subs({symbols[v]: 0 for v in var_names}))
+                rhs_val = -constant_term
                 
                 constraints_data.append((coeffs, op, rhs_val))
                 
@@ -280,26 +309,25 @@ class BigMMethod:
         n_constraints = len(constraints_data)
         
         # Contar variables necesarias
-        n_slack = 0
-        n_excess = 0
+        # Para Big M: cada restricción necesita una variable de holgura/surplus (s)
+        # y las restricciones >= y = necesitan además una variable artificial (a)
+        n_slack = n_constraints  # Una s por cada restricción
         n_artificial = 0
         
         for coeffs, op, rhs in constraints_data:
-            if op == "<=":
-                n_slack += 1
-            elif op == ">=":
-                n_excess += 1
-                n_artificial += 1
-            elif op == "=":
+            if op == ">=" or op == "=":
                 n_artificial += 1
         
-        n_total = n_vars + n_slack + n_excess + n_artificial
+        n_total = n_vars + n_slack + n_artificial
         
         # Inicializar tableau
         tableau = np.zeros((n_constraints + 1, n_total + 1))
         
         # Crear mapeo de variables a índices (CRÍTICO para consistencia)
         self.var_map = {}
+        self.slack_variables = {}
+        self.excess_variables = {}  # No se usa, pero se mantiene por compatibilidad
+        self.artificial_variables = {}
         idx = 0
         
         # Variables originales
@@ -307,18 +335,11 @@ class BigMMethod:
             self.var_map[var] = idx
             idx += 1
         
-        # Variables de holgura
+        # Variables de holgura (una por cada restricción)
         for i in range(n_slack):
             s_name = f"s{i+1}"
             self.var_map[s_name] = idx
             self.slack_variables[s_name] = idx
-            idx += 1
-        
-        # Variables de exceso
-        for i in range(n_excess):
-            e_name = f"e{i+1}"
-            self.var_map[e_name] = idx
-            self.excess_variables[e_name] = idx
             idx += 1
         
         # Variables artificiales
@@ -333,56 +354,62 @@ class BigMMethod:
         basis_cols = []
         
         slack_counter = 1
-        excess_counter = 1
         artificial_counter = 1
         
         for i, (coeffs, op, rhs) in enumerate(constraints_data):
             # Coeficientes de variables originales
             tableau[i, :n_vars] = coeffs
             
-            # Variables de holgura/exceso/artificiales
+            s_name = f"s{slack_counter}"
+            s_col = self.var_map[s_name]
+            
+            # Variables de holgura/artificiales según el tipo de restricción
             if op == "<=":
-                s_name = f"s{slack_counter}"
-                s_col = self.var_map[s_name]
+                # ax + s = b (s se suma)
                 tableau[i, s_col] = 1
                 basis.append(s_name)
                 basis_cols.append(s_col)
-                slack_counter += 1
                 
             elif op == ">=":
-                e_name = f"e{excess_counter}"
-                a_name = f"a{artificial_counter}"
-                e_col = self.var_map[e_name]
-                a_col = self.var_map[a_name]
+                # ax - s + a = b (s se resta, a se suma)
+                tableau[i, s_col] = -1  # Variable de holgura se RESTA
                 
-                tableau[i, e_col] = -1
+                a_name = f"a{artificial_counter}"
+                a_col = self.var_map[a_name]
                 tableau[i, a_col] = 1
                 
-                basis.append(a_name)
+                basis.append(a_name)  # La artificial entra a la base
                 basis_cols.append(a_col)
-                
-                excess_counter += 1
                 artificial_counter += 1
                 
             elif op == "=":
+                # ax + a = b (solo artificial, sin holgura en la ecuación pero s=0)
+                tableau[i, s_col] = 0  # No se usa la holgura para igualdades
+                
                 a_name = f"a{artificial_counter}"
                 a_col = self.var_map[a_name]
                 tableau[i, a_col] = 1
+                
                 basis.append(a_name)
                 basis_cols.append(a_col)
                 artificial_counter += 1
+            
+            slack_counter += 1
             
             # RHS
             tableau[i, -1] = rhs
         
         # Construir fila objetivo CORRECTAMENTE
+        # Siempre usamos la forma de maximización internamente
+        # Para minimización, c ya viene negado, así que -c = c_original
         obj_row = np.zeros(n_total + 1)
         obj_row[:n_vars] = -c
         
         # Penalizar variables artificiales con M
         # Para cada variable artificial en la base inicial, restar M veces su ecuación
+        artificial_names = set(self.artificial_variables.keys())
         for i, var_name in enumerate(basis):
-            if var_name.startswith("a"):
+            if var_name in artificial_names:
                 # Restar M * (fila i) de la fila objetivo
                 obj_row -= self.M * tableau[i]
         
@@ -394,15 +421,26 @@ class BigMMethod:
         """
         Encuentra la columna pivote (variable entrante).
         Selecciona la columna con coeficiente más negativo en la fila objetivo.
+        IMPORTANTE: Ignora las columnas de variables artificiales para evitar que vuelvan a entrar.
         """
         obj_row = tableau[-1, :-1]
-        min_idx = int(np.argmin(obj_row))
-        min_coeff = float(obj_row[min_idx])
         
-        if min_coeff >= -self._TOL:
-            return None
+        # Obtener índices de columnas de variables artificiales
+        artificial_cols = set(self.artificial_variables.values())
         
-        return min_idx
+        min_coeff = -self._TOL
+        min_col = None
+        
+        for j in range(len(obj_row)):
+            # Ignorar columnas de variables artificiales
+            if j in artificial_cols:
+                continue
+            
+            if obj_row[j] < min_coeff:
+                min_coeff = obj_row[j]
+                min_col = j
+        
+        return min_col
     
     def _find_leaving_row(self, tableau: np.ndarray, entering_col: int) -> Optional[int]:
         """
@@ -489,10 +527,9 @@ class BigMMethod:
         var_names_str = [str(v) if hasattr(v, '__str__') else v for v in var_names]
         
         column_headers = var_names_str + list(self.slack_variables.keys()) + \
-                        list(self.excess_variables.keys()) + list(self.artificial_variables.keys()) + \
-                        ["RHS"]
+                        list(self.artificial_variables.keys()) + ["RHS"]
         
-        row_labels = [str(b) for b in basis] + ["Función Objetivo"]
+        row_labels = [str(b) for b in basis] + ["Z"]
         
         step = BigMStep(
             iteration=0,
@@ -545,10 +582,9 @@ class BigMMethod:
         var_names_str = [str(v) if hasattr(v, '__str__') else v for v in var_names]
         
         column_headers = var_names_str + list(self.slack_variables.keys()) + \
-                        list(self.excess_variables.keys()) + list(self.artificial_variables.keys()) + \
-                        ["RHS"]
+                        list(self.artificial_variables.keys()) + ["RHS"]
         
-        row_labels = basis + ["Función Objetivo"]
+        row_labels = basis + ["Z"]
         
         # Convertir índices a int explícitamente para evitar problemas de serialización
         pivot_row_int = int(pivot_row)
@@ -621,10 +657,9 @@ class BigMMethod:
         var_names_str = [str(v) if hasattr(v, '__str__') else v for v in var_names]
         
         column_headers = var_names_str + list(self.slack_variables.keys()) + \
-                        list(self.excess_variables.keys()) + list(self.artificial_variables.keys()) + \
-                        ["RHS"]
+                        list(self.artificial_variables.keys()) + ["RHS"]
         
-        row_labels = [str(b) for b in basis] + ["Función Objetivo"]
+        row_labels = [str(b) for b in basis] + ["Z"]
         
         step = BigMStep(
             iteration=len(self.steps),
@@ -725,13 +760,14 @@ class BigMMethod:
         var_names: List[str]
     ) -> str:
         """
-        Genera ecuaciones LaTeX con variables de holgura, exceso y artificiales.
-        Formato similar al Simplex pero incluyendo variables adicionales.
+        Genera ecuaciones LaTeX con variables de holgura y artificiales.
+        - Para <=: ax + s = b
+        - Para >=: ax - s + a = b  
+        - Para =:  ax + a = b
         """
         equations = []
         
         slack_counter = 1
-        excess_counter = 1
         artificial_counter = 1
         
         for i, (coeffs, op, rhs) in enumerate(constraints_data):
@@ -740,46 +776,75 @@ class BigMMethod:
             for j, var in enumerate(var_names):
                 coeff = float(coeffs[j])
                 if abs(coeff) > self._TOL:
-                    coeff_str = f"{int(coeff)}" if coeff == int(coeff) else f"{coeff:.4g}"
+                    # Formatear coeficiente
+                    if coeff == int(coeff):
+                        coeff_val = int(coeff)
+                    else:
+                        coeff_val = coeff
+                    
+                    # Extraer nombre base y crear subíndice
                     base_name = var.rstrip('0123456789')
-                    var_idx = j + 1
+                    var_idx = ''.join(filter(str.isdigit, var)) or str(j + 1)
                     var_sub = f"{base_name}_{{{var_idx}}}"
                     
-                    if coeff == 1:
-                        var_terms.append(f"{var_sub}")
-                    elif coeff == -1:
-                        var_terms.append(f"-{var_sub}")
-                    elif coeff > 0:
-                        var_terms.append(f"{coeff_str}{var_sub}")
+                    if coeff_val == 1:
+                        var_terms.append((1, var_sub))
+                    elif coeff_val == -1:
+                        var_terms.append((-1, var_sub))
                     else:
-                        var_terms.append(f"{coeff_str}{var_sub}")
+                        var_terms.append((coeff_val, var_sub))
             
-            eq = var_terms[0] if var_terms else "0"
-            for term in var_terms[1:]:
-                eq += f" + {term}" if not term.startswith("-") else f" {term}"
+            # Construir ecuación con formato correcto de signos
+            eq_parts = []
+            for idx, (coeff_val, var_sub) in enumerate(var_terms):
+                if idx == 0:
+                    if coeff_val == 1:
+                        eq_parts.append(var_sub)
+                    elif coeff_val == -1:
+                        eq_parts.append(f"-{var_sub}")
+                    else:
+                        eq_parts.append(f"{coeff_val}{var_sub}")
+                else:
+                    if coeff_val == 1:
+                        eq_parts.append(f" + {var_sub}")
+                    elif coeff_val == -1:
+                        eq_parts.append(f" - {var_sub}")
+                    elif coeff_val > 0:
+                        eq_parts.append(f" + {coeff_val}{var_sub}")
+                    else:
+                        eq_parts.append(f" - {abs(coeff_val)}{var_sub}")
             
-            rhs_str = f"{int(rhs) if rhs == int(rhs) else f'{rhs:.4g}'}"
+            eq = "".join(eq_parts) if eq_parts else "0"
+            
+            # Formatear RHS
+            if rhs == int(rhs):
+                rhs_str = str(int(rhs))
+            else:
+                rhs_str = f"{rhs:.4g}"
+            
+            s_name = f"s_{{{slack_counter}}}"
             
             # Agregar variables según el tipo de restricción
             if op == "<=":
-                s_name = f"s_{{{slack_counter}}}"
+                # ax + s = b
                 latex_eq = f"{eq} + {s_name} = {rhs_str}"
                 equations.append(f"\\[{latex_eq}\\]")
-                slack_counter += 1
                 
             elif op == ">=":
-                e_name = f"e_{{{excess_counter}}}"
+                # ax - s + a = b
                 a_name = f"a_{{{artificial_counter}}}"
-                latex_eq = f"{eq} - {e_name} + {a_name} = {rhs_str}"
+                latex_eq = f"{eq} - {s_name} + {a_name} = {rhs_str}"
                 equations.append(f"\\[{latex_eq}\\]")
-                excess_counter += 1
                 artificial_counter += 1
                 
             elif op == "=":
+                # ax + a = b (sin variable de holgura visible)
                 a_name = f"a_{{{artificial_counter}}}"
                 latex_eq = f"{eq} + {a_name} = {rhs_str}"
                 equations.append(f"\\[{latex_eq}\\]")
                 artificial_counter += 1
+            
+            slack_counter += 1
         
         return "\n".join(equations)
     
@@ -845,6 +910,28 @@ class BigMMethod:
         
         return self._convert_numpy_types(error_result)
     
+    def _negate_z_row_for_display(self, tableau: Optional[List[List[float]]]) -> Optional[List[List[float]]]:
+        """
+        Para problemas de minimización, negamos la fila Z del tableau en la visualización.
+        Esto muestra los coeficientes como el usuario espera verlos (sin la conversión interna a maximización).
+        """
+        if tableau is None or self.is_max:
+            return tableau
+        
+        # Hacer copia para no modificar el original
+        result = [row[:] for row in tableau]
+        # Negar la última fila (fila Z)
+        result[-1] = [-x for x in result[-1]]
+        return result
+    
+    def _negate_row_for_display(self, row: Optional[List[float]]) -> Optional[List[float]]:
+        """
+        Para problemas de minimización, negamos la fila Z para mostrarla correctamente.
+        """
+        if row is None or self.is_max:
+            return row
+        return [-x for x in row]
+    
     def _convert_result_to_simplex_format(
         self,
         obj_value: float,
@@ -856,6 +943,7 @@ class BigMMethod:
         """
         Convierte el resultado del Gran M al formato de Simplex.
         Esto hace que la visualización sea consistente en el frontend.
+        Para minimización, negamos la fila Z para mostrar coeficientes positivos.
         """
         # Convertir steps al formato Simplex
         formatted_steps = []
@@ -867,10 +955,10 @@ class BigMMethod:
                     "iteration": 0,
                     "type": "initial",
                     "description": "Tableau inicial con variables artificiales",
-                    "tableau_before": step.tableau_before,
-                    "tableau_after": step.tableau,
-                    "obj_row_before": step.obj_row_before,
-                    "obj_row_after": step.obj_row_after,
+                    "tableau_before": self._negate_z_row_for_display(step.tableau_before),
+                    "tableau_after": self._negate_z_row_for_display(step.tableau),
+                    "obj_row_before": self._negate_row_for_display(step.obj_row_before),
+                    "obj_row_after": self._negate_row_for_display(step.obj_row_after),
                     "basis_before": step.basis_before,
                     "basis_after": step.basis,
                     "var_names": step.var_names or var_names,
@@ -893,10 +981,10 @@ class BigMMethod:
                     "entering_col": step.pivot_column,
                     "pivot_column": step.pivot_column,
                     "pivot_element": step.pivot_element,
-                    "tableau_before": step.tableau_before,
-                    "tableau_after": step.tableau,
-                    "obj_row_before": step.obj_row_before,
-                    "obj_row_after": step.obj_row_after,
+                    "tableau_before": self._negate_z_row_for_display(step.tableau_before),
+                    "tableau_after": self._negate_z_row_for_display(step.tableau),
+                    "obj_row_before": self._negate_row_for_display(step.obj_row_before),
+                    "obj_row_after": self._negate_row_for_display(step.obj_row_after),
                     "basis_before": step.basis_before,
                     "basis_after": step.basis,
                     "var_names": step.var_names or var_names,

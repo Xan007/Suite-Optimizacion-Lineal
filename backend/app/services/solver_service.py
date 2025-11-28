@@ -10,6 +10,8 @@ from app.schemas.analyze_schema import MathematicalModel
 from app.core.logger import logger
 from app.services.graphication_service import GraphicationService
 from app.services.big_m_method import BigMMethod
+from app.services.dual_simplex_method import DualSimplexMethod
+from app.services.dual_simplex_visualizer import DualSimplexVisualizer
 
 try:
     import pulp
@@ -47,13 +49,39 @@ class SolverService:
         # Detectar si el problema necesita el método de la Gran M
         needs_big_m = self._needs_big_m(model)
         
-        suggested = ["simplex"]
-        if needs_big_m:
-            suggested.insert(0, "big_m")
+        # Detectar si es apropiado para Simplex Dual (minimización con restricciones >=)
+        is_dual_simplex_candidate = self._is_dual_simplex_candidate(model)
         
-        not_applicable = {"graphical": "Más de 2 variables"} if len(model.variables) > 2 else {}
-        if len(model.variables) <= 2:
-            suggested.append("graphical")
+        is_minimization = model.objective == "min"
+        not_applicable = {}
+        suggested = []
+        
+        # Para problemas de minimización, solo permitir dual_simplex y big_m
+        if is_minimization:
+            if is_dual_simplex_candidate:
+                suggested.append("dual_simplex")
+            if needs_big_m:
+                suggested.append("big_m")
+            # Si no hay métodos sugeridos, al menos ofrecer dual_simplex
+            if not suggested:
+                suggested.append("dual_simplex")
+            
+            # Marcar simplex y graphical como no aplicables
+            not_applicable["simplex"] = "No disponible para problemas de minimización"
+            not_applicable["graphical"] = "No disponible para problemas de minimización"
+        else:
+            # Para maximización, la lógica actual se mantiene
+            suggested = ["simplex"]
+            if needs_big_m:
+                suggested.insert(0, "big_m")
+            if is_dual_simplex_candidate:
+                suggested.insert(0, "dual_simplex")
+            
+            if len(model.variables) > 2:
+                not_applicable["graphical"] = "Más de 2 variables"
+            else:
+                suggested.append("graphical")
+        
         return suggested, not_applicable
 
     def _needs_big_m(self, model: MathematicalModel) -> bool:
@@ -71,12 +99,52 @@ class SolverService:
                 return True
         
         return False
+    
+    def _is_dual_simplex_candidate(self, model: MathematicalModel) -> bool:
+        """
+        Verifica si el problema es candidato para Simplex Dual.
+        
+        Criterios:
+        - Debe ser un problema de minimización
+        - Debe tener restricciones >= (preferentemente)
+        """
+        if model.objective != "min":
+            return False
+        
+        if not model.constraints:
+            return False
+        
+        # Contar restricciones >=
+        ge_count = 0
+        for constraint in model.constraints:
+            # Filtrar restricciones de no-negatividad
+            if any(f"{v} >= 0" in constraint or f"{v} <= 0" in constraint 
+                   for v in model.variables.keys()):
+                continue
+            
+            if ">=" in constraint:
+                ge_count += 1
+        
+        # Es candidato si tiene al menos una restricción >=
+        return ge_count > 0
 
     def solve(self, model: MathematicalModel, method: str = "simplex") -> Dict[str, Any]:
-        """Resuelve usando Simplex tableau o Gran M según el método."""
+        """Resuelve usando Simplex tableau, Gran M, Simplex Dual o método gráfico según el método."""
         try:
+            # Validación: problemas de minimización solo pueden usar dual_simplex o big_m
+            if model.objective == "min":
+                if method not in ["dual_simplex", "big_m"]:
+                    return {
+                        "success": False,
+                        "error": f"Los problemas de minimización solo pueden resolverse con el Método Simplex Dual o el Método de la Gran M. El método '{method}' no está disponible para minimización.",
+                        "allowed_methods": ["dual_simplex", "big_m"],
+                        "objective_type": "min"
+                    }
+            
             if method == "big_m":
                 return self._solve_big_m(model)
+            elif method == "dual_simplex":
+                return self._solve_dual_simplex(model)
             elif method == "simplex":
                 return self._simplex_tableau(model)
             elif method == "graphical":
@@ -95,6 +163,27 @@ class SolverService:
             return self._convert_numpy_types(result)
         except Exception as e:
             logger.error(f"Error en _solve_big_m: {str(e)}", exc_info=True)
+            return {"success": False, "error": str(e)}
+    
+    def _solve_dual_simplex(self, model: MathematicalModel) -> Dict[str, Any]:
+        """
+        Resuelve usando el método Simplex Dual.
+        
+        Genera visualización HTML con colores para pivotes y pasos detallados.
+        """
+        try:
+            dual_solver = DualSimplexMethod()
+            result = dual_solver.solve(model)
+            
+            # Generar visualización HTML
+            if result.get("success") and result.get("steps"):
+                visualizer = DualSimplexVisualizer()
+                html_visualization = visualizer.generate_html_visualization(result["steps"])
+                result["html_visualization"] = html_visualization
+            
+            return self._convert_numpy_types(result)
+        except Exception as e:
+            logger.error(f"Error en _solve_dual_simplex: {str(e)}", exc_info=True)
             return {"success": False, "error": str(e)}
 
     def _interpret_big_m_solution(self, model: MathematicalModel, result: Dict[str, Any]) -> str:
@@ -260,6 +349,10 @@ class SolverService:
             obj_row = np.hstack([[-ci for ci in c], np.zeros(m), [0]])
             basis = [f"s{i+1}" for i in range(m)]
             basis_cols = list(range(n, n + m))
+            slack_names = [f"s{i+1}" for i in range(m)]
+            
+            # Generar encabezados de columna y etiquetas de fila para visualización
+            column_headers = var_names + slack_names + ["RHS"]
             
             steps = []
             for _ in range(100):
@@ -286,6 +379,14 @@ class SolverService:
                 leaving_name = basis[leaving_row]
                 basis[leaving_row], basis_cols[leaving_row] = entering_name, entering_col
                 
+                # Generar etiquetas de fila (base actual + fila Z)
+                row_labels_before = basis_before + ["Z"]
+                row_labels_after = basis[:] + ["Z"]
+                
+                # Combinar tableau con fila objetivo para visualización completa
+                full_tableau_before = np.vstack([tableau_before, obj_row_before]).tolist()
+                full_tableau_after = np.vstack([tableau.copy(), obj_row.copy()]).tolist()
+                
                 steps.append({
                     "iteration": len(steps) + 1,
                     "type": "iteration",
@@ -297,14 +398,17 @@ class SolverService:
                     "entering_col": int(entering_col),
                     "pivot_column": int(entering_col),
                     "pivot_element": float(pivot),
-                    "tableau_before": tableau_before.tolist(),
+                    "tableau_before": full_tableau_before,
                     "obj_row_before": obj_row_before.tolist(),
                     "basis_before": basis_before,
-                    "tableau_after": tableau.copy().tolist(),
+                    "tableau_after": full_tableau_after,
                     "obj_row_after": obj_row.copy().tolist(),
                     "basis_after": basis[:],
                     "var_names": var_names,
-                    "slack_names": [f"s{i+1}" for i in range(m)]
+                    "slack_names": slack_names,
+                    "column_headers": column_headers,
+                    "row_labels": row_labels_after,
+                    "row_labels_before": row_labels_before
                 })
             
             solution = {v: self._safe_float_conversion(tableau[[i for i, bv in enumerate(basis) if bv == v][0], -1]) if v in basis else 0.0 

@@ -561,19 +561,31 @@
             const methodsContainer = document.getElementById('methods-container');
             methodsContainer.innerHTML = '';
 
+            // Mapa de nombres de métodos en español
+            const methodDisplayNames = {
+                'simplex': 'Simplex',
+                'dual_simplex': 'Simplex Dual',
+                'graphical': 'Gráfico',
+                'big_m': 'Gran M'
+            };
+
             if (suggested.length > 0) {
                 const btnGroup = document.createElement('div');
                 btnGroup.className = 'btn-group';
                 suggested.forEach(m => {
                     const btn = document.createElement('button');
                     btn.className = 'method-btn';
-                    btn.textContent = m.charAt(0).toUpperCase() + m.slice(1);
+                    btn.textContent = methodDisplayNames[m] || m.charAt(0).toUpperCase() + m.slice(1);
                     btn.onclick = () => selectMethod(m, btn);
                     btnGroup.appendChild(btn);
                 });
                 methodsContainer.appendChild(btnGroup);
             }
 
+            // Limpiar siempre el contenedor de métodos no aplicables
+            document.getElementById('not-applicable-methods').innerHTML = '';
+            
+            // Solo mostrar si hay métodos no aplicables
             if (Object.keys(notApplicable).length > 0) {
                 const notAppDiv = document.createElement('div');
                 notAppDiv.className = 'no-applicable';
@@ -584,10 +596,10 @@
                 for (const [method, reason] of Object.entries(notApplicable)) {
                     const item = document.createElement('div');
                     item.className = 'no-applicable-item';
-                    item.textContent = `${method}: ${reason}`;
+                    const displayName = methodDisplayNames[method] || method;
+                    item.textContent = `${displayName}: ${reason}`;
                     notAppDiv.appendChild(item);
                 }
-                document.getElementById('not-applicable-methods').innerHTML = '';
                 document.getElementById('not-applicable-methods').appendChild(notAppDiv);
             }
 
@@ -746,6 +758,14 @@
             const existingPlot = document.getElementById('graphical-plot');
             if (existingPlot) existingPlot.remove();
 
+            // Mapa de nombres de métodos en español (para la sección de solución)
+            const methodDisplayNamesResult = {
+                'simplex': 'Simplex',
+                'dual_simplex': 'Simplex Dual',
+                'graphical': 'Gráfico',
+                'big_m': 'Gran M'
+            };
+
             // Método
             const methodDiv = document.createElement('div');
             methodDiv.style.marginBottom = '1.5rem';
@@ -760,7 +780,7 @@
             methodName.style.fontSize = '1.4rem';
             methodName.style.fontWeight = '700';
             methodName.style.color = '#1a1a1a';
-            methodName.textContent = result.method ? result.method.toUpperCase() : 'RESULTADO';
+            methodName.textContent = result.method ? (methodDisplayNamesResult[result.method] || result.method).toUpperCase() : 'RESULTADO';
             methodDiv.appendChild(methodName);
             content.appendChild(methodDiv);
 
@@ -782,11 +802,17 @@
                 console.warn('No objective_value in result');
             }
 
-            // ===== MOSTRAR ECUACIONES LaTeX CON VARIABLES DE HOLGURA (SOLO PARA SIMPLEX) =====
-            if (result.method === 'simplex' && result.equations_latex && result.equations_latex.trim().length > 0) {
+            // ===== MOSTRAR ECUACIONES LaTeX CON VARIABLES DE HOLGURA =====
+            if ((result.method === 'simplex' || result.method === 'dual_simplex' || result.method === 'big_m') 
+                && result.equations_latex && result.equations_latex.trim().length > 0) {
                 const eqTitle = document.createElement('div');
                 eqTitle.className = 'section-title';
-                eqTitle.textContent = 'Ecuaciones con Variables de Holgura';
+                // Título según el método
+                if (result.method === 'big_m') {
+                    eqTitle.textContent = 'Ecuaciones con Variables de Holgura y Artificiales';
+                } else {
+                    eqTitle.textContent = 'Ecuaciones con Variables de Holgura';
+                }
                 content.appendChild(eqTitle);
 
                 const eqDiv = document.createElement('div');
@@ -948,31 +974,50 @@
                                 baseHeader.style.padding = '0.4rem';
                                 baseHeader.style.border = '1px solid #ddd';
                                 baseHeader.style.textAlign = 'left';
+                                baseHeader.style.backgroundColor = '#4CAF50';
+                                baseHeader.style.color = 'white';
                                 headerRow.appendChild(baseHeader);
 
-                                if (step.var_names) {
-                                    step.var_names.forEach(v => {
-                                        const th = document.createElement('th');
-                                        th.textContent = v;
-                                        th.style.padding = '0.4rem';
-                                        th.style.border = '1px solid #ddd';
-                                        th.style.textAlign = 'center';
-                                        th.style.fontWeight = '600';
-                                        headerRow.appendChild(th);
+                                // Construir lista de todos los encabezados con sus índices
+                                // Usar column_headers del backend si existen, sino generar automáticamente
+                                const allHeaders = [];
+                                if (step.column_headers && step.column_headers.length > 0) {
+                                    // Usar los headers del backend (excluye RHS que está al final)
+                                    step.column_headers.forEach((name, idx) => {
+                                        if (name !== 'RHS') {
+                                            allHeaders.push({name: name, colIdx: idx});
+                                        }
                                     });
+                                } else {
+                                    // Fallback: generar automáticamente
+                                    if (step.var_names) {
+                                        step.var_names.forEach((v, idx) => allHeaders.push({name: v, colIdx: idx}));
+                                    }
+                                    const colsToSkip = step.var_names ? step.var_names.length : 0;
+                                    const numSlackCols = step.tableau_before[0].length - colsToSkip - 1;
+                                    for (let i = 0; i < numSlackCols; i++) {
+                                        allHeaders.push({name: `s${i + 1}`, colIdx: colsToSkip + i});
+                                    }
                                 }
-
-                                // Slack variables headers
-                                const colsToSkip = step.var_names ? step.var_names.length : 0;
-                                for (let i = 0; i < step.tableau_before[0].length - colsToSkip - 1; i++) {
+                                
+                                // Crear encabezados con colores para columna pivote
+                                allHeaders.forEach(({name, colIdx}) => {
                                     const th = document.createElement('th');
-                                    th.textContent = `s${i + 1}`;
+                                    th.textContent = name;
                                     th.style.padding = '0.4rem';
                                     th.style.border = '1px solid #ddd';
                                     th.style.textAlign = 'center';
                                     th.style.fontWeight = '600';
+                                    // Colorear encabezado de columna pivote
+                                    if (colIdx === step.entering_col) {
+                                        th.style.backgroundColor = '#6666ff';
+                                        th.style.color = 'white';
+                                    } else {
+                                        th.style.backgroundColor = '#4CAF50';
+                                        th.style.color = 'white';
+                                    }
                                     headerRow.appendChild(th);
-                                }
+                                });
 
                                 const rhsHeader = document.createElement('th');
                                 rhsHeader.textContent = 'RHS';
@@ -980,22 +1025,27 @@
                                 rhsHeader.style.border = '1px solid #ddd';
                                 rhsHeader.style.textAlign = 'center';
                                 rhsHeader.style.fontWeight = '600';
+                                rhsHeader.style.backgroundColor = '#4CAF50';
+                                rhsHeader.style.color = 'white';
                                 headerRow.appendChild(rhsHeader);
 
                                 thead.appendChild(headerRow);
                                 beforeTable.appendChild(thead);
 
-                                // Body
+                                // Body (excluir última fila que es la fila Z, se agrega manualmente después)
                                 const tbody = document.createElement('tbody');
-                                step.tableau_before.forEach((row, rowIdx) => {
+                                const dataRowsBefore = step.tableau_before.slice(0, -1); // Excluir fila Z
+                                dataRowsBefore.forEach((row, rowIdx) => {
                                     const tr = document.createElement('tr');
+                                    // Fila pivote: fondo rosa claro
                                     tr.style.backgroundColor = rowIdx === step.leaving_row ? '#ffe0e0' : '#ffffff';
 
                                     const baseCell = document.createElement('td');
-                                    baseCell.textContent = step.basis_before[rowIdx];
+                                    baseCell.textContent = step.basis_before[rowIdx] || (rowIdx === step.tableau_before.length - 1 ? 'Z' : `R${rowIdx}`);
                                     baseCell.style.padding = '0.4rem';
                                     baseCell.style.border = '1px solid #ddd';
                                     baseCell.style.fontWeight = '600';
+                                    baseCell.style.backgroundColor = '#f0f0f0';
                                     tr.appendChild(baseCell);
 
                                     row.forEach((val, colIdx) => {
@@ -1004,10 +1054,23 @@
                                         td.style.padding = '0.4rem';
                                         td.style.border = '1px solid #ddd';
                                         td.style.textAlign = 'center';
+                                        
+                                        // Elemento pivote: amarillo intenso con borde rojo
                                         if (rowIdx === step.leaving_row && colIdx === step.entering_col) {
-                                            td.style.backgroundColor = '#ffcc00';
+                                            td.style.backgroundColor = '#ff4444';
+                                            td.style.color = 'white';
                                             td.style.fontWeight = '700';
+                                            td.style.border = '3px solid #cc0000';
                                         }
+                                        // Columna pivote (excepto elemento pivote): azul claro
+                                        else if (colIdx === step.entering_col) {
+                                            td.style.backgroundColor = '#ccccff';
+                                        }
+                                        // Fila pivote (excepto elemento pivote): rosa claro
+                                        else if (rowIdx === step.leaving_row) {
+                                            td.style.backgroundColor = '#ffcccc';
+                                        }
+                                        
                                         tr.appendChild(td);
                                     });
                                     tbody.appendChild(tr);
@@ -1021,6 +1084,7 @@
                                 objLabel.style.padding = '0.4rem';
                                 objLabel.style.border = '1px solid #ddd';
                                 objLabel.style.fontWeight = '600';
+                                objLabel.style.backgroundColor = '#d0d0ff';
                                 objRow.appendChild(objLabel);
                                 step.obj_row_before.forEach((val, idx) => {
                                     const td = document.createElement('td');
@@ -1028,8 +1092,9 @@
                                     td.style.padding = '0.4rem';
                                     td.style.border = '1px solid #ddd';
                                     td.style.textAlign = 'center';
+                                    // Columna pivote en fila Z: azul claro
                                     if (idx === step.entering_col) {
-                                        td.style.backgroundColor = '#ffff99';
+                                        td.style.backgroundColor = '#ccccff';
                                         td.style.fontWeight = '700';
                                     }
                                     objRow.appendChild(td);
@@ -1066,29 +1131,43 @@
                                 baseHeader.style.padding = '0.4rem';
                                 baseHeader.style.border = '1px solid #ddd';
                                 baseHeader.style.textAlign = 'left';
+                                baseHeader.style.backgroundColor = '#4CAF50';
+                                baseHeader.style.color = 'white';
                                 headerRow.appendChild(baseHeader);
 
-                                if (step.var_names) {
-                                    step.var_names.forEach(v => {
-                                        const th = document.createElement('th');
-                                        th.textContent = v;
-                                        th.style.padding = '0.4rem';
-                                        th.style.border = '1px solid #ddd';
-                                        th.style.textAlign = 'center';
-                                        th.style.fontWeight = '600';
-                                        headerRow.appendChild(th);
+                                // Construir lista de todos los encabezados con sus índices (para tabla después)
+                                // Usar column_headers del backend si existen
+                                const allHeadersAfter = [];
+                                if (step.column_headers && step.column_headers.length > 0) {
+                                    // Usar los headers del backend (excluye RHS que está al final)
+                                    step.column_headers.forEach((name, idx) => {
+                                        if (name !== 'RHS') {
+                                            allHeadersAfter.push({name: name, colIdx: idx});
+                                        }
                                     });
+                                } else {
+                                    // Fallback: generar automáticamente
+                                    if (step.var_names) {
+                                        step.var_names.forEach((v, idx) => allHeadersAfter.push({name: v, colIdx: idx}));
+                                    }
+                                    const numSlackColsAfter = step.tableau_after[0].length - (step.var_names ? step.var_names.length : 0) - 1;
+                                    for (let i = 0; i < numSlackColsAfter; i++) {
+                                        allHeadersAfter.push({name: `s${i + 1}`, colIdx: (step.var_names ? step.var_names.length : 0) + i});
+                                    }
                                 }
-
-                                for (let i = 0; i < step.tableau_after[0].length - (step.var_names ? step.var_names.length : 0) - 1; i++) {
+                                
+                                // Crear encabezados (sin resaltar columna pivote en tabla después)
+                                allHeadersAfter.forEach(({name, colIdx}) => {
                                     const th = document.createElement('th');
-                                    th.textContent = `s${i + 1}`;
+                                    th.textContent = name;
                                     th.style.padding = '0.4rem';
                                     th.style.border = '1px solid #ddd';
                                     th.style.textAlign = 'center';
                                     th.style.fontWeight = '600';
+                                    th.style.backgroundColor = '#4CAF50';
+                                    th.style.color = 'white';
                                     headerRow.appendChild(th);
-                                }
+                                });
 
                                 const rhsHeader = document.createElement('th');
                                 rhsHeader.textContent = 'RHS';
@@ -1096,14 +1175,17 @@
                                 rhsHeader.style.border = '1px solid #ddd';
                                 rhsHeader.style.textAlign = 'center';
                                 rhsHeader.style.fontWeight = '600';
+                                rhsHeader.style.backgroundColor = '#4CAF50';
+                                rhsHeader.style.color = 'white';
                                 headerRow.appendChild(rhsHeader);
 
                                 thead.appendChild(headerRow);
                                 afterTable.appendChild(thead);
 
-                                // Body
+                                // Body (excluir última fila que es la fila Z, se agrega manualmente después)
                                 const tbody = document.createElement('tbody');
-                                step.tableau_after.forEach((row, rowIdx) => {
+                                const dataRowsAfter = step.tableau_after.slice(0, -1); // Excluir fila Z
+                                dataRowsAfter.forEach((row, rowIdx) => {
                                     const tr = document.createElement('tr');
                                     tr.style.backgroundColor = '#ffffff';
 
