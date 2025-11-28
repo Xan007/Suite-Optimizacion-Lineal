@@ -8,6 +8,106 @@ from app.api.docs import (
 )
 
 
+class SensitivityRange(BaseModel):
+    """Rango de sensibilidad para un parámetro."""
+    variable: str = Field(..., description="Nombre de la variable o restricción")
+    current_value: float = Field(..., description="Valor actual del parámetro")
+    lower_bound: Optional[float] = Field(None, description="Límite inferior del rango")
+    upper_bound: Optional[float] = Field(None, description="Límite superior del rango")
+    lower_bound_display: str = Field(..., description="Límite inferior formateado para mostrar")
+    upper_bound_display: str = Field(..., description="Límite superior formateado para mostrar")
+    allowable_decrease: Optional[float] = Field(None, description="Decremento permitido")
+    allowable_increase: Optional[float] = Field(None, description="Incremento permitido")
+    allowable_decrease_display: str = Field(..., description="Decremento permitido formateado")
+    allowable_increase_display: str = Field(..., description="Incremento permitido formateado")
+    explanation: str = Field(..., description="Explicación didáctica del rango")
+    interpretation: str = Field(..., description="Interpretación práctica")
+
+
+class ShadowPrice(BaseModel):
+    """Precio sombra de una restricción."""
+    constraint_index: int = Field(..., description="Índice de la restricción")
+    constraint_name: str = Field(..., description="Nombre de la restricción")
+    value: float = Field(..., description="Valor del precio sombra")
+    slack_variable: str = Field(..., description="Variable de holgura asociada")
+    binding: bool = Field(..., description="Si la restricción está activa (binding)")
+    explanation: str = Field(..., description="Explicación del precio sombra")
+    economic_interpretation: str = Field(..., description="Interpretación económica")
+
+
+class ReducedCost(BaseModel):
+    """Costo reducido de una variable."""
+    variable: str = Field(..., description="Nombre de la variable")
+    value: float = Field(..., description="Valor del costo reducido")
+    is_basic: bool = Field(..., description="Si la variable está en la base")
+    explanation: str = Field(..., description="Explicación del costo reducido")
+    interpretation: str = Field(..., description="Interpretación práctica")
+
+
+class SensitivityAnalysis(BaseModel):
+    """Análisis de sensibilidad completo del problema de optimización."""
+    objective_ranges: List[SensitivityRange] = Field(
+        default_factory=list,
+        description="Rangos de optimalidad de los coeficientes de la función objetivo"
+    )
+    rhs_ranges: List[SensitivityRange] = Field(
+        default_factory=list,
+        description="Rangos de factibilidad de los términos independientes (RHS)"
+    )
+    shadow_prices: List[ShadowPrice] = Field(
+        default_factory=list,
+        description="Precios sombra (valores duales) de las restricciones"
+    )
+    reduced_costs: List[ReducedCost] = Field(
+        default_factory=list,
+        description="Costos reducidos de las variables"
+    )
+    objective_value: float = Field(..., description="Valor óptimo de la función objetivo")
+    is_maximization: bool = Field(..., description="Si el problema es de maximización")
+    basic_variables: List[str] = Field(default_factory=list, description="Variables en la base óptima")
+    non_basic_variables: List[str] = Field(default_factory=list, description="Variables fuera de la base")
+    theory_explanation: str = Field(default="", description="Explicación teórica del análisis de sensibilidad")
+    practical_insights: List[str] = Field(default_factory=list, description="Insights prácticos derivados del análisis")
+    final_tableau: Optional[List[List[float]]] = Field(None, description="Tableau final para referencia")
+    column_headers: Optional[List[str]] = Field(None, description="Encabezados de columna del tableau")
+    row_labels: Optional[List[str]] = Field(None, description="Etiquetas de fila del tableau")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "objective_ranges": [
+                    {
+                        "variable": "x1",
+                        "current_value": 3.0,
+                        "lower_bound": 2.0,
+                        "upper_bound": 5.0,
+                        "lower_bound_display": "2",
+                        "upper_bound_display": "5",
+                        "allowable_decrease": 1.0,
+                        "allowable_increase": 2.0,
+                        "allowable_decrease_display": "1",
+                        "allowable_increase_display": "2",
+                        "explanation": "El coeficiente de x1 puede variar entre [2, 5] sin cambiar la base óptima.",
+                        "interpretation": "Si el coeficiente cambia dentro de este rango, la solución óptima permanece igual."
+                    }
+                ],
+                "shadow_prices": [
+                    {
+                        "constraint_index": 0,
+                        "constraint_name": "Restricción 1",
+                        "value": 1.5,
+                        "slack_variable": "s1",
+                        "binding": True,
+                        "explanation": "La restricción 1 está activa con precio sombra π₁ = 1.5",
+                        "economic_interpretation": "Aumentar el RHS en 1 unidad mejoraría Z en 1.5 unidades."
+                    }
+                ],
+                "theory_explanation": "El análisis de sensibilidad estudia cómo los cambios en los parámetros afectan la solución óptima...",
+                "practical_insights": ["📊 Valor óptimo: Z = 36", "💎 Recurso más valioso: Restricción 1"]
+            }
+        }
+
+
 class MathematicalModel(BaseModel):
     """Modelo matemático con función objetivo, restricciones, variables y contexto resumido."""
     

@@ -13,6 +13,7 @@ from app.services.big_m_method import BigMMethod
 from app.services.dual_simplex_method import DualSimplexMethod
 from app.services.dual_simplex_visualizer import DualSimplexVisualizer
 from app.services.interior_point_method import InteriorPointMethod
+from app.services.sensitivity_analysis import SensitivityAnalyzer
 
 try:
     import pulp
@@ -147,21 +148,92 @@ class SolverService:
                         "objective_type": "min"
                     }
             
+            # Resolver según el método
             if method == "big_m":
-                return self._solve_big_m(model)
+                result = self._solve_big_m(model)
             elif method == "dual_simplex":
-                return self._solve_dual_simplex(model)
+                result = self._solve_dual_simplex(model)
             elif method == "interior_point":
-                return self._solve_interior_point(model)
+                result = self._solve_interior_point(model)
             elif method == "simplex":
-                return self._simplex_tableau(model)
+                result = self._simplex_tableau(model)
             elif method == "graphical":
-                return self._graphical_method(model)
+                result = self._graphical_method(model)
             else:
                 return {"success": False, "error": f"Método no soportado: {method}"}
+            
+            # Añadir análisis de sensibilidad para métodos compatibles
+            if result.get("success") and method in ["simplex", "dual_simplex", "big_m"]:
+                sensitivity_result = self._perform_sensitivity_analysis(model, result, method)
+                if sensitivity_result.get("success"):
+                    result["sensitivity_analysis"] = sensitivity_result.get("sensitivity_analysis")
+            
+            return result
+            
         except Exception as e:
             logger.error(f"Error en solve: {str(e)}", exc_info=True)
             return {"success": False, "error": str(e)}
+    
+    def _perform_sensitivity_analysis(
+        self, 
+        model: MathematicalModel, 
+        solver_result: Dict[str, Any],
+        method: str
+    ) -> Dict[str, Any]:
+        """
+        Realiza el análisis de sensibilidad post-óptimo para los métodos compatibles.
+        
+        Solo aplica a: simplex, dual_simplex, big_m
+        """
+        try:
+            var_names = list(model.variables.keys())
+            symbols = {name: sp.Symbol(name, real=True, positive=True) for name in var_names}
+            
+            # Parsear función objetivo para obtener coeficientes c
+            obj_expr = sp.sympify(model.objective_function, locals=symbols)
+            c = np.array([self._safe_float_conversion(obj_expr.coeff(symbols[v], 1) or 0) for v in var_names])
+            
+            # Parsear restricciones para obtener RHS (b)
+            structural_constraints = self._filter_nonneg_constraints(model.constraints or [], var_names)
+            b = []
+            constraint_names = []
+            
+            for idx, constraint_str in enumerate(structural_constraints):
+                parsed = self._parse_constraint(constraint_str, symbols)
+                if parsed:
+                    _, _, rhs_val = parsed
+                    b.append(self._safe_float_conversion(rhs_val))
+                    constraint_names.append(f"Restricción {idx + 1}")
+            
+            b = np.array(b)
+            
+            # Crear datos del modelo para el analizador
+            model_data = {
+                "c": c,
+                "b": b,
+                "var_names": var_names,
+                "constraint_names": constraint_names,
+                "is_maximization": model.objective == "max"
+            }
+            
+            # Realizar análisis
+            analyzer = SensitivityAnalyzer()
+            return analyzer.analyze(
+                solver_result=solver_result,
+                original_c=c,
+                original_b=b,
+                var_names=var_names,
+                constraint_names=constraint_names,
+                is_maximization=model.objective == "max"
+            )
+            
+        except Exception as e:
+            logger.warning(f"Error en análisis de sensibilidad: {str(e)}")
+            return {
+                "success": False,
+                "error": str(e),
+                "sensitivity_analysis": None
+            }
 
     def _solve_big_m(self, model: MathematicalModel) -> Dict[str, Any]:
         """Resuelve usando el método de la Gran M."""

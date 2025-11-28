@@ -402,6 +402,438 @@
             margin: 0.4rem 0;
             padding-left: 1rem;
         }
+
+        /* ====================================================================
+           ESTILOS PARA ANÁLISIS DE SENSIBILIDAD
+           ==================================================================== */
+        
+        .sensitivity-analysis-container {
+            margin-top: 2rem;
+            padding: 0;
+        }
+
+        .sensitivity-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem 2rem;
+            border-radius: 16px 16px 0 0;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .sensitivity-header h3 {
+            margin: 0;
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+
+        .sensitivity-header .icon {
+            font-size: 2rem;
+        }
+
+        .sensitivity-body {
+            background: white;
+            border: 2px solid #e0e4e8;
+            border-top: none;
+            border-radius: 0 0 16px 16px;
+            padding: 2rem;
+        }
+
+        /* Tabs de navegación */
+        .sensitivity-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            border-bottom: 2px solid #e0e4e8;
+            padding-bottom: 0.5rem;
+        }
+
+        .sensitivity-tab {
+            padding: 0.8rem 1.2rem;
+            border: none;
+            background: #f5f7fa;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .sensitivity-tab:hover {
+            background: #e8ecf1;
+            color: #333;
+        }
+
+        .sensitivity-tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .sensitivity-panel {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .sensitivity-panel.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Insights prácticos */
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .insight-card {
+            background: linear-gradient(135deg, #f8fbff 0%, #f0f4ff 100%);
+            border-left: 4px solid #667eea;
+            padding: 1rem 1.2rem;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .insight-card strong {
+            color: #333;
+        }
+
+        /* Sección de teoría expandible */
+        .theory-section {
+            background: #fffbf0;
+            border: 2px solid #ffd700;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+
+        .theory-header {
+            background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%);
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #333;
+            font-weight: 700;
+        }
+
+        .theory-header:hover {
+            background: linear-gradient(135deg, #ffaa00 0%, #ff8800 100%);
+        }
+
+        .theory-toggle {
+            font-size: 1.2rem;
+            transition: transform 0.3s;
+        }
+
+        .theory-toggle.expanded {
+            transform: rotate(180deg);
+        }
+
+        .theory-content {
+            padding: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+        }
+
+        .theory-content.expanded {
+            padding: 1.5rem;
+            max-height: 2000px;
+        }
+
+        .theory-content h4 {
+            color: #333;
+            margin: 1rem 0 0.5rem 0;
+            font-size: 1.1rem;
+        }
+
+        .theory-content h4:first-child {
+            margin-top: 0;
+        }
+
+        .theory-content p, .theory-content li {
+            color: #555;
+            line-height: 1.7;
+            margin: 0.5rem 0;
+        }
+
+        .theory-content ul {
+            padding-left: 1.5rem;
+        }
+
+        /* Tabla de rangos */
+        .sensitivity-table-container {
+            overflow-x: auto;
+            margin: 1rem 0;
+            border-radius: 12px;
+            border: 1px solid #e0e4e8;
+        }
+
+        .sensitivity-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .sensitivity-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 0.8rem;
+            text-align: left;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .sensitivity-table td {
+            padding: 0.8rem;
+            border-bottom: 1px solid #e0e4e8;
+            vertical-align: top;
+        }
+
+        .sensitivity-table tr:hover {
+            background: #f8fbff;
+        }
+
+        .sensitivity-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .range-bar-container {
+            width: 100%;
+            min-width: 150px;
+            height: 24px;
+            background: #e0e4e8;
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .range-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            position: absolute;
+        }
+
+        .range-marker {
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 12px;
+            height: 12px;
+            background: #ff6b35;
+            border: 2px solid white;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            z-index: 2;
+        }
+
+        .range-label {
+            font-size: 0.75rem;
+            color: #666;
+            text-align: center;
+            margin-top: 4px;
+        }
+
+        /* Precios sombra */
+        .shadow-price-card {
+            background: white;
+            border: 2px solid #e0e4e8;
+            border-radius: 12px;
+            padding: 1.2rem;
+            margin-bottom: 1rem;
+            transition: all 0.2s;
+        }
+
+        .shadow-price-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+        }
+
+        .shadow-price-card.binding {
+            border-left: 4px solid #00aa44;
+        }
+
+        .shadow-price-card.non-binding {
+            border-left: 4px solid #999;
+        }
+
+        .shadow-price-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.8rem;
+        }
+
+        .shadow-price-name {
+            font-weight: 700;
+            color: #333;
+            font-size: 1rem;
+        }
+
+        .shadow-price-value {
+            font-family: 'Courier New', monospace;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .shadow-price-badge {
+            display: inline-block;
+            padding: 0.25rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .shadow-price-badge.binding {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .shadow-price-badge.non-binding {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
+        .shadow-price-explanation {
+            color: #555;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-top: 0.8rem;
+            padding-top: 0.8rem;
+            border-top: 1px solid #e0e4e8;
+        }
+
+        .economic-interpretation {
+            background: #f0fff4;
+            border-radius: 8px;
+            padding: 0.8rem;
+            margin-top: 0.8rem;
+            font-size: 0.85rem;
+            color: #00aa44;
+        }
+
+        .economic-interpretation::before {
+            content: "💡 ";
+        }
+
+        /* Costos reducidos */
+        .reduced-cost-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .reduced-cost-card {
+            background: white;
+            border: 2px solid #e0e4e8;
+            border-radius: 10px;
+            padding: 1rem;
+            transition: all 0.2s;
+        }
+
+        .reduced-cost-card:hover {
+            border-color: #667eea;
+        }
+
+        .reduced-cost-card.basic {
+            background: linear-gradient(135deg, #f0fff4 0%, #e8f5e9 100%);
+            border-color: #4caf50;
+        }
+
+        .reduced-cost-card.non-basic {
+            background: linear-gradient(135deg, #fff8f0 0%, #fff3e0 100%);
+            border-color: #ff9800;
+        }
+
+        .reduced-cost-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .reduced-cost-var {
+            font-weight: 700;
+            color: #333;
+            font-size: 1.1rem;
+        }
+
+        .reduced-cost-value {
+            font-family: 'Courier New', monospace;
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        .reduced-cost-value.zero {
+            color: #4caf50;
+        }
+
+        .reduced-cost-value.nonzero {
+            color: #ff9800;
+        }
+
+        .reduced-cost-status {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+
+        .reduced-cost-interpretation {
+            font-size: 0.85rem;
+            color: #555;
+            line-height: 1.4;
+        }
+
+        /* Tooltips */
+        .tooltip-trigger {
+            cursor: help;
+            border-bottom: 1px dashed #999;
+        }
+
+        /* Tableau final compacto */
+        .final-tableau-container {
+            margin-top: 1.5rem;
+        }
+
+        .final-tableau-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .final-tableau-title {
+            font-weight: 700;
+            color: #333;
+            font-size: 1.1rem;
+        }
+
+        .final-tableau-toggle {
+            background: #f5f7fa;
+            border: 1px solid #e0e4e8;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .final-tableau-toggle:hover {
+            background: #e8ecf1;
+        }
     </style>
     <script>
         window.MathJax = {
@@ -1430,6 +1862,11 @@
                 content.appendChild(stepsContainer);
             }
 
+            // Sensibilidad
+            if (result.sensitivity_analysis) {
+                displaySensitivityAnalysis(result.sensitivity_analysis, result.method);
+            }
+
             // Si es método gráfico, intentar dibujar la gráfica ANTES de la tabla
             if (result.method === 'graphical') {
                 try {
@@ -1982,6 +2419,544 @@
                 const el = document.getElementById('graphical-plot-container');
                 if (el) el.remove();
             }
+        }
+
+        // ====================================================================
+        // ANÁLISIS DE SENSIBILIDAD - Visualización Educativa y Didáctica
+        // ====================================================================
+        function displaySensitivityAnalysis(sensitivity, method) {
+            console.log('Displaying sensitivity analysis:', sensitivity);
+            
+            const content = document.getElementById('solution-content');
+            
+            // Crear contenedor principal
+            const container = document.createElement('div');
+            container.className = 'sensitivity-analysis-container';
+            container.id = 'sensitivity-analysis-section';
+            
+            // Header
+            const header = document.createElement('div');
+            header.className = 'sensitivity-header';
+            header.innerHTML = `
+                <span class="icon">📊</span>
+                <div>
+                    <h3>Análisis de Sensibilidad Post-Óptimo</h3>
+                    <small style="opacity: 0.9;">Método: ${getMethodDisplayName(method)}</small>
+                </div>
+            `;
+            container.appendChild(header);
+            
+            // Body
+            const body = document.createElement('div');
+            body.className = 'sensitivity-body';
+            
+            // Insights prácticos (arriba de todo)
+            if (sensitivity.practical_insights && sensitivity.practical_insights.length > 0) {
+                const insightsSection = document.createElement('div');
+                insightsSection.className = 'insights-grid';
+                sensitivity.practical_insights.forEach(insight => {
+                    const card = document.createElement('div');
+                    card.className = 'insight-card';
+                    card.innerHTML = insight.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                    insightsSection.appendChild(card);
+                });
+                body.appendChild(insightsSection);
+            }
+            
+            // Sección de teoría expandible
+            const theorySection = createTheorySection(sensitivity.theory_explanation);
+            body.appendChild(theorySection);
+            
+            // Tabs de navegación
+            const tabs = document.createElement('div');
+            tabs.className = 'sensitivity-tabs';
+            tabs.innerHTML = `
+                <button class="sensitivity-tab active" onclick="showSensitivityPanel('objective-ranges', this)">
+                    📈 Rangos de Coeficientes
+                </button>
+                <button class="sensitivity-tab" onclick="showSensitivityPanel('rhs-ranges', this)">
+                    📏 Rangos RHS
+                </button>
+                <button class="sensitivity-tab" onclick="showSensitivityPanel('shadow-prices', this)">
+                    💰 Precios Sombra
+                </button>
+                <button class="sensitivity-tab" onclick="showSensitivityPanel('reduced-costs', this)">
+                    📉 Costos Reducidos
+                </button>
+            `;
+            body.appendChild(tabs);
+            
+            // Paneles
+            const panelsContainer = document.createElement('div');
+            panelsContainer.id = 'sensitivity-panels';
+            
+            // Panel 1: Rangos de coeficientes objetivo
+            const objectivePanel = createObjectiveRangesPanel(sensitivity.objective_ranges, sensitivity.is_maximization);
+            panelsContainer.appendChild(objectivePanel);
+            
+            // Panel 2: Rangos RHS
+            const rhsPanel = createRHSRangesPanel(sensitivity.rhs_ranges);
+            panelsContainer.appendChild(rhsPanel);
+            
+            // Panel 3: Precios sombra
+            const shadowPanel = createShadowPricesPanel(sensitivity.shadow_prices, sensitivity.is_maximization);
+            panelsContainer.appendChild(shadowPanel);
+            
+            // Panel 4: Costos reducidos
+            const reducedPanel = createReducedCostsPanel(sensitivity.reduced_costs, sensitivity.is_maximization);
+            panelsContainer.appendChild(reducedPanel);
+            
+            body.appendChild(panelsContainer);
+            
+            // Información de variables básicas/no básicas
+            if (sensitivity.basic_variables && sensitivity.non_basic_variables) {
+                const varsInfo = document.createElement('div');
+                varsInfo.style.marginTop = '1.5rem';
+                varsInfo.style.padding = '1rem';
+                varsInfo.style.background = '#f8fbff';
+                varsInfo.style.borderRadius = '8px';
+                varsInfo.style.border = '1px solid #e0e4e8';
+                varsInfo.innerHTML = `
+                    <div style="font-weight: 700; margin-bottom: 0.5rem; color: #333;">📋 Estado de Variables en la Solución Óptima</div>
+                    <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
+                        <div>
+                            <span style="color: #4caf50; font-weight: 600;">✓ Variables Básicas (en la solución):</span>
+                            <span style="font-family: monospace; margin-left: 0.5rem;">${sensitivity.basic_variables.join(', ') || 'Ninguna'}</span>
+                        </div>
+                        <div>
+                            <span style="color: #ff9800; font-weight: 600;">○ Variables No Básicas (valor = 0):</span>
+                            <span style="font-family: monospace; margin-left: 0.5rem;">${sensitivity.non_basic_variables.join(', ') || 'Ninguna'}</span>
+                        </div>
+                    </div>
+                `;
+                body.appendChild(varsInfo);
+            }
+            
+            container.appendChild(body);
+            content.appendChild(container);
+            
+            // Renderizar MathJax si hay fórmulas
+            if (window.MathJax) {
+                MathJax.typesetPromise([container]).catch(err => console.warn('MathJax error:', err));
+            }
+        }
+        
+        function getMethodDisplayName(method) {
+            const names = {
+                'simplex': 'Simplex',
+                'dual_simplex': 'Simplex Dual',
+                'big_m': 'Gran M'
+            };
+            return names[method] || method;
+        }
+        
+        function showSensitivityPanel(panelId, button) {
+            // Desactivar todos los tabs
+            document.querySelectorAll('.sensitivity-tab').forEach(tab => tab.classList.remove('active'));
+            // Ocultar todos los paneles
+            document.querySelectorAll('.sensitivity-panel').forEach(panel => panel.classList.remove('active'));
+            
+            // Activar tab y panel seleccionados
+            button.classList.add('active');
+            document.getElementById(panelId).classList.add('active');
+        }
+        
+        function createTheorySection(theoryExplanation) {
+            const section = document.createElement('div');
+            section.className = 'theory-section';
+            
+            const header = document.createElement('div');
+            header.className = 'theory-header';
+            header.innerHTML = `
+                <span>📚 ¿Qué es el Análisis de Sensibilidad? (Click para expandir)</span>
+                <span class="theory-toggle">▼</span>
+            `;
+            
+            const content = document.createElement('div');
+            content.className = 'theory-content';
+            
+            // Formatear el contenido de teoría
+            if (theoryExplanation) {
+                // Convertir Markdown básico a HTML
+                let html = theoryExplanation
+                    .replace(/## (.*)/g, '<h4>$1</h4>')
+                    .replace(/### (.*)/g, '<h4 style="font-size: 1rem;">$1</h4>')
+                    .replace(/#### (.*)/g, '<h4 style="font-size: 0.95rem; color: #555;">$1</h4>')
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\n\n/g, '</p><p>')
+                    .replace(/- (.*)/g, '<li>$1</li>');
+                
+                content.innerHTML = `<div style="line-height: 1.7;">${html}</div>`;
+            } else {
+                content.innerHTML = `
+                    <h4>📖 Fundamentos del Análisis de Sensibilidad</h4>
+                    <p>El análisis de sensibilidad estudia cómo los cambios en los parámetros del problema afectan la solución óptima. Es fundamental porque:</p>
+                    <ul>
+                        <li><strong>Los datos raramente son exactos</strong> - hay incertidumbre en costos, disponibilidad de recursos, etc.</li>
+                        <li><strong>Permite tomar decisiones más informadas</strong> - sabemos qué parámetros son críticos.</li>
+                        <li><strong>Identifica oportunidades</strong> - qué recursos vale la pena adquirir más.</li>
+                    </ul>
+                    
+                    <h4>📊 Componentes Principales</h4>
+                    <ul>
+                        <li><strong>Rangos de Optimalidad:</strong> ¿Cuánto pueden cambiar los coeficientes de la función objetivo sin alterar qué variables están en la solución?</li>
+                        <li><strong>Rangos de Factibilidad:</strong> ¿Cuánto pueden variar los recursos disponibles (RHS) manteniendo la base óptima?</li>
+                        <li><strong>Precios Sombra:</strong> El valor marginal de cada recurso - ¿cuánto mejoraría Z con una unidad más de cada recurso?</li>
+                        <li><strong>Costos Reducidos:</strong> ¿Cuánto debe mejorar el coeficiente de una variable no básica para que entre a la solución?</li>
+                    </ul>
+                `;
+            }
+            
+            header.onclick = () => {
+                content.classList.toggle('expanded');
+                header.querySelector('.theory-toggle').classList.toggle('expanded');
+            };
+            
+            section.appendChild(header);
+            section.appendChild(content);
+            
+            return section;
+        }
+        
+        function createObjectiveRangesPanel(ranges, isMaximization) {
+            const panel = document.createElement('div');
+            panel.className = 'sensitivity-panel active';
+            panel.id = 'objective-ranges';
+            
+            const title = document.createElement('h4');
+            title.style.marginBottom = '1rem';
+            title.style.color = '#333';
+            title.innerHTML = `📈 Rangos de Optimalidad de Coeficientes <small style="color: #666; font-weight: normal;">(Función Objetivo)</small>`;
+            panel.appendChild(title);
+            
+            const explanation = document.createElement('div');
+            explanation.style.marginBottom = '1.5rem';
+            explanation.style.padding = '1rem';
+            explanation.style.background = '#f0f4ff';
+            explanation.style.borderRadius = '8px';
+            explanation.style.fontSize = '0.9rem';
+            explanation.style.lineHeight = '1.6';
+            explanation.innerHTML = `
+                <strong>¿Qué significa esto?</strong><br>
+                Estos rangos indican cuánto puede variar cada coeficiente $c_j$ de la función objetivo 
+                sin que cambien las <em>variables básicas</em> (las que tienen valor positivo en la solución).
+                <br><br>
+                <strong>Nota importante:</strong> Aunque la base no cambie, el <em>valor óptimo Z sí cambiará</em> 
+                proporcionalmente al cambio en el coeficiente.
+            `;
+            panel.appendChild(explanation);
+            
+            if (!ranges || ranges.length === 0) {
+                panel.innerHTML += '<p style="color: #999;">No hay datos de rangos disponibles.</p>';
+                return panel;
+            }
+            
+            // Tabla de rangos
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'sensitivity-table-container';
+            
+            let tableHTML = `
+                <table class="sensitivity-table">
+                    <thead>
+                        <tr>
+                            <th>Variable</th>
+                            <th>Valor Actual</th>
+                            <th>Límite Inferior</th>
+                            <th>Límite Superior</th>
+                            <th>↓ Decremento Permitido</th>
+                            <th>↑ Incremento Permitido</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            ranges.forEach(range => {
+                const currentVal = formatNumber(range.current_value, 4);
+                const lowerBound = range.lower_bound_display || formatBound(range.lower_bound);
+                const upperBound = range.upper_bound_display || formatBound(range.upper_bound);
+                const decrease = range.allowable_decrease_display || formatBound(range.allowable_decrease);
+                const increase = range.allowable_increase_display || formatBound(range.allowable_increase);
+                
+                tableHTML += `
+                    <tr>
+                        <td><strong style="color: #667eea;">${range.variable}</strong></td>
+                        <td style="font-family: monospace; font-weight: 600;">${currentVal}</td>
+                        <td style="font-family: monospace; color: ${lowerBound === '-∞' ? '#999' : '#d32f2f'};">${lowerBound}</td>
+                        <td style="font-family: monospace; color: ${upperBound === '∞' ? '#999' : '#388e3c'};">${upperBound}</td>
+                        <td style="font-family: monospace;">${decrease}</td>
+                        <td style="font-family: monospace;">${increase}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="6" style="background: #fafafa; padding: 0.8rem; font-size: 0.85rem; color: #555;">
+                            <div style="margin-bottom: 0.3rem;"><strong>📝 Explicación:</strong> ${range.explanation}</div>
+                            <div style="color: #667eea;"><strong>💡 Interpretación:</strong> ${range.interpretation}</div>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tableHTML += '</tbody></table>';
+            tableContainer.innerHTML = tableHTML;
+            panel.appendChild(tableContainer);
+            
+            return panel;
+        }
+        
+        function createRHSRangesPanel(ranges) {
+            const panel = document.createElement('div');
+            panel.className = 'sensitivity-panel';
+            panel.id = 'rhs-ranges';
+            
+            const title = document.createElement('h4');
+            title.style.marginBottom = '1rem';
+            title.style.color = '#333';
+            title.innerHTML = `📏 Rangos de Factibilidad <small style="color: #666; font-weight: normal;">(Términos Independientes RHS)</small>`;
+            panel.appendChild(title);
+            
+            const explanation = document.createElement('div');
+            explanation.style.marginBottom = '1.5rem';
+            explanation.style.padding = '1rem';
+            explanation.style.background = '#f0fff4';
+            explanation.style.borderRadius = '8px';
+            explanation.style.fontSize = '0.9rem';
+            explanation.style.lineHeight = '1.6';
+            explanation.innerHTML = `
+                <strong>¿Qué significa esto?</strong><br>
+                Estos rangos indican cuánto puede variar cada término independiente $b_i$ (lado derecho de las restricciones) 
+                manteniendo la misma base óptima.
+                <br><br>
+                <strong>Importante:</strong> Dentro de estos rangos, los <em>precios sombra permanecen válidos</em> 
+                para calcular el cambio en Z.
+            `;
+            panel.appendChild(explanation);
+            
+            if (!ranges || ranges.length === 0) {
+                panel.innerHTML += '<p style="color: #999;">No hay datos de rangos RHS disponibles.</p>';
+                return panel;
+            }
+            
+            // Tabla de rangos
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'sensitivity-table-container';
+            
+            let tableHTML = `
+                <table class="sensitivity-table">
+                    <thead>
+                        <tr>
+                            <th>Restricción</th>
+                            <th>RHS Actual</th>
+                            <th>Límite Inferior</th>
+                            <th>Límite Superior</th>
+                            <th>↓ Decremento</th>
+                            <th>↑ Incremento</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            ranges.forEach(range => {
+                const currentVal = formatNumber(range.current_value, 4);
+                const lowerBound = range.lower_bound_display || formatBound(range.lower_bound);
+                const upperBound = range.upper_bound_display || formatBound(range.upper_bound);
+                const decrease = range.allowable_decrease_display || formatBound(range.allowable_decrease);
+                const increase = range.allowable_increase_display || formatBound(range.allowable_increase);
+                
+                tableHTML += `
+                    <tr>
+                        <td><strong style="color: #00aa44;">${range.variable}</strong></td>
+                        <td style="font-family: monospace; font-weight: 600;">${currentVal}</td>
+                        <td style="font-family: monospace; color: ${lowerBound === '-∞' ? '#999' : '#d32f2f'};">${lowerBound}</td>
+                        <td style="font-family: monospace; color: ${upperBound === '∞' ? '#999' : '#388e3c'};">${upperBound}</td>
+                        <td style="font-family: monospace;">${decrease}</td>
+                        <td style="font-family: monospace;">${increase}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="6" style="background: #fafafa; padding: 0.8rem; font-size: 0.85rem; color: #555;">
+                            <div style="margin-bottom: 0.3rem;"><strong>📝 Explicación:</strong> ${range.explanation}</div>
+                            <div style="color: #00aa44;"><strong>💡 Interpretación:</strong> ${range.interpretation}</div>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tableHTML += '</tbody></table>';
+            tableContainer.innerHTML = tableHTML;
+            panel.appendChild(tableContainer);
+            
+            return panel;
+        }
+        
+        function createShadowPricesPanel(shadowPrices, isMaximization) {
+            const panel = document.createElement('div');
+            panel.className = 'sensitivity-panel';
+            panel.id = 'shadow-prices';
+            
+            const title = document.createElement('h4');
+            title.style.marginBottom = '1rem';
+            title.style.color = '#333';
+            title.innerHTML = `💰 Precios Sombra <small style="color: #666; font-weight: normal;">(Valores Duales)</small>`;
+            panel.appendChild(title);
+            
+            const explanation = document.createElement('div');
+            explanation.style.marginBottom = '1.5rem';
+            explanation.style.padding = '1rem';
+            explanation.style.background = '#fff8f0';
+            explanation.style.borderRadius = '8px';
+            explanation.style.fontSize = '0.9rem';
+            explanation.style.lineHeight = '1.6';
+            explanation.innerHTML = `
+                <strong>¿Qué es un precio sombra?</strong><br>
+                El precio sombra $\\pi_i$ de una restricción representa el <em>cambio en el valor óptimo Z</em> 
+                por cada unidad adicional del recurso $b_i$.
+                <br><br>
+                <strong>Interpretación económica:</strong>
+                <ul style="margin: 0.5rem 0 0 1.5rem;">
+                    <li><strong>Restricción activa (binding):</strong> El recurso se usa completamente. $\\pi_i > 0$ significa que más recurso mejoraría Z.</li>
+                    <li><strong>Restricción no activa:</strong> Hay excedente del recurso. $\\pi_i = 0$ porque agregar más no ayuda.</li>
+                </ul>
+            `;
+            panel.appendChild(explanation);
+            
+            if (!shadowPrices || shadowPrices.length === 0) {
+                panel.innerHTML += '<p style="color: #999;">No hay datos de precios sombra disponibles.</p>';
+                return panel;
+            }
+            
+            // Tarjetas de precios sombra
+            const cardsContainer = document.createElement('div');
+            
+            shadowPrices.forEach(sp => {
+                const card = document.createElement('div');
+                card.className = `shadow-price-card ${sp.binding ? 'binding' : 'non-binding'}`;
+                
+                card.innerHTML = `
+                    <div class="shadow-price-header">
+                        <div>
+                            <div class="shadow-price-name">${sp.constraint_name}</div>
+                            <span class="shadow-price-badge ${sp.binding ? 'binding' : 'non-binding'}">
+                                ${sp.binding ? '🔒 Activa' : '🔓 No Activa'}
+                            </span>
+                        </div>
+                        <div class="shadow-price-value">π = ${formatNumber(sp.value, 4)}</div>
+                    </div>
+                    <div class="shadow-price-explanation">${sp.explanation}</div>
+                    <div class="economic-interpretation">${sp.economic_interpretation}</div>
+                `;
+                
+                cardsContainer.appendChild(card);
+            });
+            
+            panel.appendChild(cardsContainer);
+            
+            // Resumen visual
+            const summaryDiv = document.createElement('div');
+            summaryDiv.style.marginTop = '1.5rem';
+            summaryDiv.style.padding = '1rem';
+            summaryDiv.style.background = '#f5f7fa';
+            summaryDiv.style.borderRadius = '8px';
+            
+            const bindingCount = shadowPrices.filter(sp => sp.binding).length;
+            const nonBindingCount = shadowPrices.length - bindingCount;
+            const maxShadowPrice = Math.max(...shadowPrices.map(sp => Math.abs(sp.value)));
+            const mostValuable = shadowPrices.find(sp => Math.abs(sp.value) === maxShadowPrice);
+            
+            summaryDiv.innerHTML = `
+                <strong>📊 Resumen de Precios Sombra</strong>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 0.8rem;">
+                    <div style="background: #d4edda; padding: 0.8rem; border-radius: 6px;">
+                        <div style="font-size: 1.5rem; font-weight: 700; color: #155724;">${bindingCount}</div>
+                        <div style="font-size: 0.85rem; color: #155724;">Restricciones Activas</div>
+                    </div>
+                    <div style="background: #e2e3e5; padding: 0.8rem; border-radius: 6px;">
+                        <div style="font-size: 1.5rem; font-weight: 700; color: #383d41;">${nonBindingCount}</div>
+                        <div style="font-size: 0.85rem; color: #383d41;">Restricciones con Holgura</div>
+                    </div>
+                    ${mostValuable && mostValuable.value > 0 ? `
+                    <div style="background: #fff3cd; padding: 0.8rem; border-radius: 6px;">
+                        <div style="font-size: 1.1rem; font-weight: 700; color: #856404;">${mostValuable.constraint_name}</div>
+                        <div style="font-size: 0.85rem; color: #856404;">Recurso Más Valioso (π = ${formatNumber(mostValuable.value, 4)})</div>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            panel.appendChild(summaryDiv);
+            
+            return panel;
+        }
+        
+        function createReducedCostsPanel(reducedCosts, isMaximization) {
+            const panel = document.createElement('div');
+            panel.className = 'sensitivity-panel';
+            panel.id = 'reduced-costs';
+            
+            const title = document.createElement('h4');
+            title.style.marginBottom = '1rem';
+            title.style.color = '#333';
+            title.innerHTML = `📉 Costos Reducidos <small style="color: #666; font-weight: normal;">(Coeficientes de la Fila Z)</small>`;
+            panel.appendChild(title);
+            
+            const explanation = document.createElement('div');
+            explanation.style.marginBottom = '1.5rem';
+            explanation.style.padding = '1rem';
+            explanation.style.background = '#f5f0ff';
+            explanation.style.borderRadius = '8px';
+            explanation.style.fontSize = '0.9rem';
+            explanation.style.lineHeight = '1.6';
+            explanation.innerHTML = `
+                <strong>¿Qué es el costo reducido?</strong><br>
+                El costo reducido $\\bar{c}_j$ indica cuánto debe mejorar el coeficiente de una variable 
+                para que sea rentable incluirla en la solución.
+                <br><br>
+                <strong>Interpretación:</strong>
+                <ul style="margin: 0.5rem 0 0 1.5rem;">
+                    <li><strong>Variable básica:</strong> Costo reducido = 0 (por definición, ya está en la solución).</li>
+                    <li><strong>Variable no básica:</strong> El costo reducido muestra el "costo de oportunidad" de incluirla.</li>
+                </ul>
+            `;
+            panel.appendChild(explanation);
+            
+            if (!reducedCosts || reducedCosts.length === 0) {
+                panel.innerHTML += '<p style="color: #999;">No hay datos de costos reducidos disponibles.</p>';
+                return panel;
+            }
+            
+            // Grid de tarjetas
+            const grid = document.createElement('div');
+            grid.className = 'reduced-cost-grid';
+            
+            reducedCosts.forEach(rc => {
+                const card = document.createElement('div');
+                card.className = `reduced-cost-card ${rc.is_basic ? 'basic' : 'non-basic'}`;
+                
+                const isZero = Math.abs(rc.value) < 1e-8;
+                
+                card.innerHTML = `
+                    <div class="reduced-cost-header">
+                        <span class="reduced-cost-var">${rc.variable}</span>
+                        <span class="reduced-cost-value ${isZero ? 'zero' : 'nonzero'}">${formatNumber(rc.value, 4)}</span>
+                    </div>
+                    <div class="reduced-cost-status">
+                        ${rc.is_basic 
+                            ? '✅ <span style="color: #4caf50;">En la base (variable activa)</span>' 
+                            : '⭕ <span style="color: #ff9800;">Fuera de la base (valor = 0)</span>'}
+                    </div>
+                    <div class="reduced-cost-interpretation">${rc.interpretation}</div>
+                `;
+                
+                grid.appendChild(card);
+            });
+            
+            panel.appendChild(grid);
+            
+            return panel;
+        }
+        
+        function formatBound(value) {
+            if (value === null || value === undefined) return '∞';
+            if (value === Infinity || value > 1e10) return '∞';
+            if (value === -Infinity || value < -1e10) return '-∞';
+            return formatNumber(value, 4);
         }
     </script>
 </body>
