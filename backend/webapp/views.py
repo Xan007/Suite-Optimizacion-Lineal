@@ -210,12 +210,12 @@ def solve_model(request: HttpRequest) -> JsonResponse:
         model = MathematicalModel(**model_dict)
         method = payload.get('method', 'simplex')
         
-        # Validación: problemas de minimización solo pueden usar dual_simplex o big_m
-        if model.objective == "min" and method not in ["dual_simplex", "big_m"]:
+        # Validación: problemas de minimización solo pueden usar dual_simplex, big_m o interior_point
+        if model.objective == "min" and method not in ["dual_simplex", "big_m", "interior_point"]:
             return _json_response({
                 'success': False,
-                'detail': f"Los problemas de minimización solo pueden resolverse con el Método Simplex Dual o el Método de la Gran M. El método '{method}' no está disponible para minimización.",
-                'allowed_methods': ["dual_simplex", "big_m"],
+                'detail': f"Los problemas de minimización solo pueden resolverse con el Método Simplex Dual, el Método de la Gran M o el Método de Punto Interior. El método '{method}' no está disponible para minimización.",
+                'allowed_methods': ["dual_simplex", "big_m", "interior_point"],
                 'objective_type': 'min'
             }, status=400)
         

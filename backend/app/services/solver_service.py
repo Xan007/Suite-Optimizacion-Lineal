@@ -12,6 +12,7 @@ from app.services.graphication_service import GraphicationService
 from app.services.big_m_method import BigMMethod
 from app.services.dual_simplex_method import DualSimplexMethod
 from app.services.dual_simplex_visualizer import DualSimplexVisualizer
+from app.services.interior_point_method import InteriorPointMethod
 
 try:
     import pulp
@@ -56,15 +57,17 @@ class SolverService:
         not_applicable = {}
         suggested = []
         
-        # Para problemas de minimización, solo permitir dual_simplex y big_m
+        # Para problemas de minimización, solo permitir dual_simplex, big_m e interior_point
         if is_minimization:
             if is_dual_simplex_candidate:
                 suggested.append("dual_simplex")
             if needs_big_m:
                 suggested.append("big_m")
+            # Punto interior siempre disponible para minimización
+            suggested.append("interior_point")
             # Si no hay métodos sugeridos, al menos ofrecer dual_simplex
-            if not suggested:
-                suggested.append("dual_simplex")
+            if len(suggested) == 1:  # Solo interior_point
+                suggested.insert(0, "dual_simplex")
             
             # Marcar simplex y graphical como no aplicables
             not_applicable["simplex"] = "No disponible para problemas de minimización"
@@ -76,6 +79,9 @@ class SolverService:
                 suggested.insert(0, "big_m")
             if is_dual_simplex_candidate:
                 suggested.insert(0, "dual_simplex")
+            
+            # Punto interior disponible para ambos tipos
+            suggested.append("interior_point")
             
             if len(model.variables) > 2:
                 not_applicable["graphical"] = "Más de 2 variables"
@@ -129,15 +135,15 @@ class SolverService:
         return ge_count > 0
 
     def solve(self, model: MathematicalModel, method: str = "simplex") -> Dict[str, Any]:
-        """Resuelve usando Simplex tableau, Gran M, Simplex Dual o método gráfico según el método."""
+        """Resuelve usando Simplex tableau, Gran M, Simplex Dual, Punto Interior o método gráfico según el método."""
         try:
-            # Validación: problemas de minimización solo pueden usar dual_simplex o big_m
+            # Validación: problemas de minimización solo pueden usar dual_simplex, big_m o interior_point
             if model.objective == "min":
-                if method not in ["dual_simplex", "big_m"]:
+                if method not in ["dual_simplex", "big_m", "interior_point"]:
                     return {
                         "success": False,
-                        "error": f"Los problemas de minimización solo pueden resolverse con el Método Simplex Dual o el Método de la Gran M. El método '{method}' no está disponible para minimización.",
-                        "allowed_methods": ["dual_simplex", "big_m"],
+                        "error": f"Los problemas de minimización solo pueden resolverse con el Método Simplex Dual, el Método de la Gran M o el Método de Punto Interior. El método '{method}' no está disponible para minimización.",
+                        "allowed_methods": ["dual_simplex", "big_m", "interior_point"],
                         "objective_type": "min"
                     }
             
@@ -145,6 +151,8 @@ class SolverService:
                 return self._solve_big_m(model)
             elif method == "dual_simplex":
                 return self._solve_dual_simplex(model)
+            elif method == "interior_point":
+                return self._solve_interior_point(model)
             elif method == "simplex":
                 return self._simplex_tableau(model)
             elif method == "graphical":
@@ -184,6 +192,20 @@ class SolverService:
             return self._convert_numpy_types(result)
         except Exception as e:
             logger.error(f"Error en _solve_dual_simplex: {str(e)}", exc_info=True)
+            return {"success": False, "error": str(e)}
+
+    def _solve_interior_point(self, model: MathematicalModel) -> Dict[str, Any]:
+        """
+        Resuelve usando el método de Punto Interior (Barrera Logarítmica).
+        
+        Genera visualización detallada del proceso iterativo.
+        """
+        try:
+            ip_solver = InteriorPointMethod()
+            result = ip_solver.solve(model)
+            return self._convert_numpy_types(result)
+        except Exception as e:
+            logger.error(f"Error en _solve_interior_point: {str(e)}", exc_info=True)
             return {"success": False, "error": str(e)}
 
     def _interpret_big_m_solution(self, model: MathematicalModel, result: Dict[str, Any]) -> str:

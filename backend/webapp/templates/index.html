@@ -566,7 +566,8 @@
                 'simplex': 'Simplex',
                 'dual_simplex': 'Simplex Dual',
                 'graphical': 'Gráfico',
-                'big_m': 'Gran M'
+                'big_m': 'Gran M',
+                'interior_point': 'Punto Interior'
             };
 
             if (suggested.length > 0) {
@@ -763,7 +764,8 @@
                 'simplex': 'Simplex',
                 'dual_simplex': 'Simplex Dual',
                 'graphical': 'Gráfico',
-                'big_m': 'Gran M'
+                'big_m': 'Gran M',
+                'interior_point': 'Punto Interior'
             };
 
             // Método
@@ -877,13 +879,197 @@
             if (result.steps && result.steps.length > 0) {
                 const stepsTitle = document.createElement('div');
                 stepsTitle.className = 'section-title';
-                stepsTitle.textContent = `Evaluación de Vértices (${result.steps.length})`;
+                // Título diferente según el método
+                if (result.method === 'interior_point') {
+                    stepsTitle.textContent = `Trayectoria Interior (${result.steps.length} iteraciones)`;
+                } else if (result.method === 'graphical') {
+                    stepsTitle.textContent = `Evaluación de Vértices (${result.steps.length})`;
+                } else {
+                    stepsTitle.textContent = `Iteraciones del Método (${result.steps.length})`;
+                }
                 content.appendChild(stepsTitle);
 
                 const stepsContainer = document.createElement('div');
 
+                // Para método de Punto Interior, mostrar visualización especial
+                if (result.method === 'interior_point') {
+                    result.steps.forEach(step => {
+                        const stepCard = document.createElement('div');
+                        stepCard.className = 'step-iteration';
+                        stepCard.style.marginBottom = '1.5rem';
+                        stepCard.style.padding = '1.5rem';
+                        stepCard.style.border = step.is_optimal ? '2px solid #28a745' : '1px solid #ddd';
+                        stepCard.style.borderRadius = '12px';
+                        stepCard.style.backgroundColor = step.is_optimal ? '#f0fff4' : '#ffffff';
+                        stepCard.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)';
+
+                        // Header con iteración
+                        const header = document.createElement('div');
+                        header.style.display = 'flex';
+                        header.style.justifyContent = 'space-between';
+                        header.style.alignItems = 'center';
+                        header.style.marginBottom = '1rem';
+                        header.style.paddingBottom = '0.8rem';
+                        header.style.borderBottom = '1px solid #eee';
+                        
+                        const iterLabel = document.createElement('span');
+                        iterLabel.style.fontWeight = '700';
+                        iterLabel.style.fontSize = '1.1rem';
+                        iterLabel.style.color = step.is_optimal ? '#28a745' : '#0066cc';
+                        iterLabel.innerHTML = step.iteration === 0 
+                            ? '🚀 Punto Inicial' 
+                            : `📍 Iteración ${step.iteration}`;
+                        if (step.is_optimal) {
+                            iterLabel.innerHTML += ' <span style="color: #ff6b35;">⭐ ÓPTIMO</span>';
+                        }
+                        header.appendChild(iterLabel);
+
+                        const objBadge = document.createElement('span');
+                        objBadge.style.backgroundColor = step.is_optimal ? '#28a745' : '#0066cc';
+                        objBadge.style.color = 'white';
+                        objBadge.style.padding = '0.3rem 0.8rem';
+                        objBadge.style.borderRadius = '20px';
+                        objBadge.style.fontSize = '0.9rem';
+                        objBadge.style.fontWeight = '600';
+                        objBadge.textContent = `Z = ${formatNumber(step.objective_value, 6)}`;
+                        header.appendChild(objBadge);
+                        stepCard.appendChild(header);
+
+                        // Descripción
+                        const descDiv = document.createElement('div');
+                        descDiv.style.marginBottom = '1rem';
+                        descDiv.style.padding = '0.8rem';
+                        descDiv.style.backgroundColor = '#f8f9fa';
+                        descDiv.style.borderRadius = '8px';
+                        descDiv.style.fontSize = '0.95rem';
+                        descDiv.style.color = '#495057';
+                        descDiv.innerHTML = `<strong>📋</strong> ${step.description}`;
+                        stepCard.appendChild(descDiv);
+
+                        // Variables de decisión en grid
+                        if (step.x && step.x.length > 0 && step.var_names) {
+                            const varsTitle = document.createElement('div');
+                            varsTitle.style.fontWeight = '600';
+                            varsTitle.style.marginBottom = '0.5rem';
+                            varsTitle.style.color = '#333';
+                            varsTitle.textContent = '📊 Variables de Decisión:';
+                            stepCard.appendChild(varsTitle);
+
+                            const varsGrid = document.createElement('div');
+                            varsGrid.style.display = 'grid';
+                            varsGrid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(120px, 1fr))';
+                            varsGrid.style.gap = '0.5rem';
+                            varsGrid.style.marginBottom = '1rem';
+
+                            step.var_names.forEach((name, idx) => {
+                                if (idx < step.x.length) {
+                                    const varItem = document.createElement('div');
+                                    varItem.style.backgroundColor = '#e3f2fd';
+                                    varItem.style.padding = '0.5rem 0.8rem';
+                                    varItem.style.borderRadius = '6px';
+                                    varItem.style.textAlign = 'center';
+                                    varItem.innerHTML = `<strong>${name}</strong> = ${formatNumber(step.x[idx], 6)}`;
+                                    varsGrid.appendChild(varItem);
+                                }
+                            });
+                            stepCard.appendChild(varsGrid);
+                        }
+
+                        // Métricas de convergencia (si existen)
+                        if (step.mu !== null || step.complementarity_gap !== null || step.alpha !== null || step.slacks !== null) {
+                            const metricsDiv = document.createElement('div');
+                            metricsDiv.style.display = 'grid';
+                            metricsDiv.style.gridTemplateColumns = 'repeat(auto-fit, minmax(180px, 1fr))';
+                            metricsDiv.style.gap = '0.8rem';
+                            metricsDiv.style.marginTop = '1rem';
+
+                            if (step.mu !== null && step.mu !== undefined) {
+                                const muCard = document.createElement('div');
+                                muCard.style.backgroundColor = '#fff3e0';
+                                muCard.style.padding = '0.8rem';
+                                muCard.style.borderRadius = '8px';
+                                muCard.style.textAlign = 'center';
+                                muCard.innerHTML = `
+                                    <div style="font-size: 0.8rem; color: #e65100; font-weight: 600;">Parámetro μ (Barrera)</div>
+                                    <div style="font-size: 1.1rem; font-weight: 700; color: #bf360c;">${step.mu.toExponential(2)}</div>
+                                `;
+                                metricsDiv.appendChild(muCard);
+                            }
+
+                            if (step.complementarity_gap !== null && step.complementarity_gap !== undefined) {
+                                const gapCard = document.createElement('div');
+                                gapCard.style.backgroundColor = '#e8f5e9';
+                                gapCard.style.padding = '0.8rem';
+                                gapCard.style.borderRadius = '8px';
+                                gapCard.style.textAlign = 'center';
+                                gapCard.innerHTML = `
+                                    <div style="font-size: 0.8rem; color: #2e7d32; font-weight: 600;">Gap de Convergencia</div>
+                                    <div style="font-size: 1.1rem; font-weight: 700; color: #1b5e20;">${step.complementarity_gap.toExponential(2)}</div>
+                                `;
+                                metricsDiv.appendChild(gapCard);
+                            }
+
+                            if (step.alpha !== null && step.alpha !== undefined) {
+                                const alphaCard = document.createElement('div');
+                                alphaCard.style.backgroundColor = '#e1f5fe';
+                                alphaCard.style.padding = '0.8rem';
+                                alphaCard.style.borderRadius = '8px';
+                                alphaCard.style.textAlign = 'center';
+                                alphaCard.innerHTML = `
+                                    <div style="font-size: 0.8rem; color: #0277bd; font-weight: 600;">Tamaño de Paso</div>
+                                    <div style="font-size: 1.1rem; font-weight: 700; color: #01579b;">α = ${formatNumber(step.alpha, 4)}</div>
+                                `;
+                                metricsDiv.appendChild(alphaCard);
+                            }
+
+                            if (step.gradient_norm !== null && step.gradient_norm !== undefined) {
+                                const gradCard = document.createElement('div');
+                                gradCard.style.backgroundColor = '#f3e5f5';
+                                gradCard.style.padding = '0.8rem';
+                                gradCard.style.borderRadius = '8px';
+                                gradCard.style.textAlign = 'center';
+                                gradCard.innerHTML = `
+                                    <div style="font-size: 0.8rem; color: #7b1fa2; font-weight: 600;">||Dirección||</div>
+                                    <div style="font-size: 1.1rem; font-weight: 700; color: #4a148c;">${formatNumber(step.gradient_norm, 4)}</div>
+                                `;
+                                metricsDiv.appendChild(gradCard);
+                            }
+
+                            stepCard.appendChild(metricsDiv);
+                        }
+
+                        // Mostrar holguras si existen
+                        if (step.slacks && step.slacks.length > 0) {
+                            const slacksTitle = document.createElement('div');
+                            slacksTitle.style.fontWeight = '600';
+                            slacksTitle.style.marginTop = '1rem';
+                            slacksTitle.style.marginBottom = '0.5rem';
+                            slacksTitle.style.color = '#333';
+                            slacksTitle.textContent = '📏 Holguras (distancia al borde):';
+                            stepCard.appendChild(slacksTitle);
+
+                            const slacksGrid = document.createElement('div');
+                            slacksGrid.style.display = 'flex';
+                            slacksGrid.style.flexWrap = 'wrap';
+                            slacksGrid.style.gap = '0.5rem';
+
+                            step.slacks.forEach((slack, idx) => {
+                                const slackItem = document.createElement('span');
+                                slackItem.style.backgroundColor = slack > 0.1 ? '#c8e6c9' : '#ffcdd2';
+                                slackItem.style.padding = '0.3rem 0.6rem';
+                                slackItem.style.borderRadius = '4px';
+                                slackItem.style.fontSize = '0.85rem';
+                                slackItem.textContent = `s${idx + 1} = ${formatNumber(slack, 4)}`;
+                                slacksGrid.appendChild(slackItem);
+                            });
+                            stepCard.appendChild(slacksGrid);
+                        }
+
+                        stepsContainer.appendChild(stepCard);
+                    });
+                }
                 // Para método gráfico, mostrar de forma simplificada
-                if (result.method === 'graphical') {
+                else if (result.method === 'graphical') {
                     result.steps.forEach(step => {
                         const stepCard = document.createElement('div');
                         stepCard.className = 'step-iteration';
