@@ -52,6 +52,8 @@ from typing import Dict, List, Optional, Tuple, Any
 import numpy as np
 from dataclasses import dataclass, field
 from app.core.logger import logger
+from app.core.groq_client import GroqClient
+from app.core.config import settings
 
 
 @dataclass
@@ -1038,4 +1040,319 @@ def perform_sensitivity_analysis(
         var_names=var_names,
         constraint_names=constraint_names,
         is_maximization=is_maximization
+    )
+
+
+class ExecutiveConclusionGenerator:
+    """
+    Generador de conclusiones ejecutivas usando IA.
+    
+    Analiza el problema original, la solución óptima y el análisis de sensibilidad
+    para generar un informe de alto nivel dirigido a directivos y tomadores de decisiones.
+    """
+    
+    EXECUTIVE_SYSTEM_PROMPT = """Eres un consultor experto en investigación de operaciones y análisis de negocios.
+Tu rol es interpretar los resultados de optimización lineal y traducirlos en insights accionables
+para directivos y tomadores de decisiones que NO tienen conocimientos técnicos de matemáticas.
+
+IMPORTANTE:
+- Usa lenguaje de negocios, NO términos técnicos de matemáticas
+- Enfócate en el IMPACTO en el negocio, no en las fórmulas
+- Da recomendaciones concretas y accionables
+- Identifica riesgos y oportunidades
+- Sé conciso pero completo
+- Usa viñetas y estructura clara
+- Incluye números específicos cuando sean relevantes
+- Relaciona siempre con el contexto del problema original"""
+
+    def __init__(self, api_key: Optional[str] = None):
+        """
+        Inicializa el generador con la API key de Groq.
+        
+        Args:
+            api_key: API key de Groq. Si no se proporciona, usa la configuración por defecto.
+        """
+        self.api_key = api_key or settings.GROQ_API_KEY
+        
+    def generate_conclusion(
+        self,
+        original_problem: str,
+        model_context: str,
+        solver_result: Dict[str, Any],
+        sensitivity_analysis: Optional[Dict[str, Any]],
+        method: str,
+        variables_description: Dict[str, str]
+    ) -> Dict[str, Any]:
+        """
+        Genera una conclusión ejecutiva usando IA.
+        
+        Args:
+            original_problem: Enunciado original del problema
+            model_context: Contexto del modelo matemático
+            solver_result: Resultado del solver (objective_value, variables, etc.)
+            sensitivity_analysis: Análisis de sensibilidad (opcional)
+            method: Método usado (simplex, dual_simplex, big_m)
+            variables_description: Descripción de cada variable
+            
+        Returns:
+            Diccionario con la conclusión ejecutiva
+        """
+        try:
+            if not self.api_key:
+                return {
+                    "success": False,
+                    "error": "API key de Groq no configurada",
+                    "conclusion": None
+                }
+            
+            # Construir el prompt con toda la información
+            prompt = self._build_prompt(
+                original_problem=original_problem,
+                model_context=model_context,
+                solver_result=solver_result,
+                sensitivity_analysis=sensitivity_analysis,
+                method=method,
+                variables_description=variables_description
+            )
+            
+            # Llamar a Groq
+            client = GroqClient(api_key=self.api_key)
+            response = client.chat(
+                user_prompt=prompt,
+                system_prompt=self.EXECUTIVE_SYSTEM_PROMPT,
+                temperature=0.7,
+                max_tokens=2500
+            )
+            
+            if not response.get("success"):
+                return {
+                    "success": False,
+                    "error": response.get("error", "Error al generar conclusión"),
+                    "conclusion": None
+                }
+            
+            conclusion_text = response.get("content", "")
+            
+            return {
+                "success": True,
+                "conclusion": conclusion_text,
+                "tokens_used": response.get("tokens", 0)
+            }
+            
+        except Exception as e:
+            logger.error(f"Error generando conclusión ejecutiva: {str(e)}", exc_info=True)
+            return {
+                "success": False,
+                "error": str(e),
+                "conclusion": None
+            }
+    
+    def _build_prompt(
+        self,
+        original_problem: str,
+        model_context: str,
+        solver_result: Dict[str, Any],
+        sensitivity_analysis: Optional[Dict[str, Any]],
+        method: str,
+        variables_description: Dict[str, str]
+    ) -> str:
+        """Construye el prompt para la IA."""
+        
+        # Extraer información del resultado
+        objective_value = solver_result.get("objective_value", 0)
+        variables = solver_result.get("variables", {})
+        is_maximization = solver_result.get("method") != "dual_simplex" or model_context.lower().find("minim") == -1
+        
+        # Formatear variables con sus valores y descripciones
+        variables_text = ""
+        for var, value in variables.items():
+            desc = variables_description.get(var, var)
+            variables_text += f"  - {var} = {value:.4g} → {desc}\n"
+        
+        # Construir sección de análisis de sensibilidad
+        sensitivity_text = ""
+        if sensitivity_analysis:
+            # Precios sombra (recursos valiosos)
+            shadow_prices = sensitivity_analysis.get("shadow_prices", [])
+            if shadow_prices:
+                sensitivity_text += "\n### Valor de los Recursos (Precios Sombra):\n"
+                for sp in shadow_prices:
+                    binding_status = "ACTIVA (recurso agotado)" if sp.get("binding") else "NO ACTIVA (hay excedente)"
+                    sensitivity_text += f"  - {sp.get('constraint_name')}: π = {sp.get('value', 0):.4g} [{binding_status}]\n"
+                    if sp.get("binding") and sp.get("value", 0) > 0:
+                        sensitivity_text += f"    → Cada unidad adicional mejoraría el resultado en {sp.get('value', 0):.4g}\n"
+            
+            # Rangos de coeficientes
+            objective_ranges = sensitivity_analysis.get("objective_ranges", [])
+            if objective_ranges:
+                sensitivity_text += "\n### Sensibilidad de Parámetros Clave:\n"
+                for r in objective_ranges:
+                    lower = r.get("lower_bound_display", "-∞")
+                    upper = r.get("upper_bound_display", "∞")
+                    sensitivity_text += f"  - {r.get('variable')}: puede variar entre [{lower}, {upper}] sin cambiar la estrategia\n"
+            
+            # Rangos RHS
+            rhs_ranges = sensitivity_analysis.get("rhs_ranges", [])
+            if rhs_ranges:
+                sensitivity_text += "\n### Flexibilidad en Recursos:\n"
+                for r in rhs_ranges:
+                    lower = r.get("lower_bound_display", "-∞")
+                    upper = r.get("upper_bound_display", "∞")
+                    sensitivity_text += f"  - {r.get('variable')}: válido entre [{lower}, {upper}]\n"
+            
+            # Variables básicas vs no básicas
+            basic_vars = sensitivity_analysis.get("basic_variables", [])
+            non_basic_vars = sensitivity_analysis.get("non_basic_variables", [])
+            if basic_vars or non_basic_vars:
+                sensitivity_text += "\n### Uso de Recursos/Variables:\n"
+                if basic_vars:
+                    sensitivity_text += f"  - Variables ACTIVAS en la solución: {', '.join(basic_vars)}\n"
+                if non_basic_vars:
+                    sensitivity_text += f"  - Variables NO utilizadas (valor = 0): {', '.join(non_basic_vars)}\n"
+        
+        # Determinar tipo de problema
+        method_names = {
+            "simplex": "Método Simplex",
+            "dual_simplex": "Método Simplex Dual",
+            "big_m": "Método de la Gran M"
+        }
+        method_name = method_names.get(method, method)
+        
+        prompt = f"""
+## PROBLEMA ORIGINAL DEL CLIENTE:
+{original_problem}
+
+## CONTEXTO DEL NEGOCIO:
+{model_context if model_context else "No especificado"}
+
+## SOLUCIÓN ÓPTIMA ENCONTRADA:
+- **Método utilizado**: {method_name}
+- **Valor óptimo de la función objetivo**: {objective_value:.4g}
+- **Tipo**: {"Maximización" if is_maximization else "Minimización"}
+
+### Valores óptimos de las variables de decisión:
+{variables_text}
+{sensitivity_text}
+
+---
+
+## INSTRUCCIONES PARA TU RESPUESTA:
+
+Genera un **INFORME EJECUTIVO** estructurado de la siguiente manera:
+
+### 1. 📋 RESUMEN EJECUTIVO (2-3 oraciones)
+Qué se optimizó y cuál es el resultado principal en términos de negocio.
+
+### 2. 💡 DECISIÓN ÓPTIMA RECOMENDADA
+Traduce los valores de las variables a acciones concretas de negocio.
+Usa el contexto del problema para dar significado a los números.
+
+### 3. 💰 IMPACTO ECONÓMICO
+Cuál es el beneficio/ahorro/costo óptimo y qué significa para la organización.
+
+### 4. ⚠️ FACTORES CRÍTICOS Y RIESGOS
+Basándote en el análisis de sensibilidad:
+- ¿Qué recursos son más valiosos/escasos?
+- ¿Qué parámetros son más sensibles a cambios?
+- ¿Qué riesgos existen si cambian las condiciones?
+
+### 5. 🎯 RECOMENDACIONES ESTRATÉGICAS
+3-5 acciones concretas que la gerencia debería considerar basándose en:
+- Los precios sombra (qué recursos vale la pena aumentar)
+- Los rangos de sensibilidad (qué tan robusta es la solución)
+- Las variables no utilizadas (qué se puede reconsiderar)
+
+### 6. 📊 PRÓXIMOS PASOS
+Qué debería hacer el cliente después de recibir este análisis.
+
+---
+Recuerda: Tu audiencia son DIRECTIVOS sin conocimientos de matemáticas. 
+Traduce TODO a lenguaje de negocios.
+"""
+        
+        return prompt
+    
+    def generate_quick_summary(
+        self,
+        solver_result: Dict[str, Any],
+        sensitivity_analysis: Optional[Dict[str, Any]],
+        variables_description: Dict[str, str]
+    ) -> str:
+        """
+        Genera un resumen rápido sin usar IA (fallback).
+        
+        Útil cuando no hay API key o se quiere una respuesta inmediata.
+        """
+        objective_value = solver_result.get("objective_value", 0)
+        variables = solver_result.get("variables", {})
+        
+        summary_lines = [
+            "## 📊 Resumen de la Solución",
+            "",
+            f"**Valor Óptimo:** {objective_value:.4g}",
+            "",
+            "### Decisiones Óptimas:"
+        ]
+        
+        for var, value in variables.items():
+            desc = variables_description.get(var, var)
+            summary_lines.append(f"- **{var}** = {value:.4g} ({desc})")
+        
+        if sensitivity_analysis:
+            # Encontrar recurso más valioso
+            shadow_prices = sensitivity_analysis.get("shadow_prices", [])
+            binding_with_value = [sp for sp in shadow_prices if sp.get("binding") and sp.get("value", 0) > 0]
+            
+            if binding_with_value:
+                most_valuable = max(binding_with_value, key=lambda x: x.get("value", 0))
+                summary_lines.extend([
+                    "",
+                    "### 💎 Recurso Más Valioso:",
+                    f"**{most_valuable.get('constraint_name')}** - Cada unidad adicional mejoraría el resultado en {most_valuable.get('value', 0):.4g}"
+                ])
+            
+            # Recursos con excedente
+            slack_resources = [sp for sp in shadow_prices if not sp.get("binding")]
+            if slack_resources:
+                summary_lines.extend([
+                    "",
+                    "### 📦 Recursos con Excedente:",
+                    ", ".join(sp.get("constraint_name", "?") for sp in slack_resources)
+                ])
+        
+        return "\n".join(summary_lines)
+
+
+def generate_executive_conclusion(
+    original_problem: str,
+    model_context: str,
+    solver_result: Dict[str, Any],
+    sensitivity_analysis: Optional[Dict[str, Any]],
+    method: str,
+    variables_description: Dict[str, str],
+    api_key: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Función de conveniencia para generar conclusión ejecutiva.
+    
+    Args:
+        original_problem: Enunciado original del problema
+        model_context: Contexto del negocio
+        solver_result: Resultado del solver
+        sensitivity_analysis: Análisis de sensibilidad
+        method: Método usado
+        variables_description: Descripción de variables
+        api_key: API key de Groq (opcional)
+        
+    Returns:
+        Diccionario con la conclusión ejecutiva
+    """
+    generator = ExecutiveConclusionGenerator(api_key=api_key)
+    return generator.generate_conclusion(
+        original_problem=original_problem,
+        model_context=model_context,
+        solver_result=solver_result,
+        sensitivity_analysis=sensitivity_analysis,
+        method=method,
+        variables_description=variables_description
     )

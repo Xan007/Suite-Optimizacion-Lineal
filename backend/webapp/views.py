@@ -226,3 +226,75 @@ def solve_model(request: HttpRequest) -> JsonResponse:
     except Exception as e:
         logger.error(f"Error en solve_model: {str(e)}", exc_info=True)
         return _json_response({'detail': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_POST
+def generate_executive_report(request: HttpRequest) -> JsonResponse:
+    """
+    Genera un informe ejecutivo usando IA basado en los resultados del solver
+    y el análisis de sensibilidad.
+    
+    Payload esperado:
+    {
+        "original_problem": "Enunciado original del problema",
+        "model": { ... },  // MathematicalModel
+        "solver_result": { ... },  // Resultado del solver
+        "sensitivity_analysis": { ... },  // Análisis de sensibilidad (opcional)
+        "method": "simplex|dual_simplex|big_m"
+    }
+    """
+    try:
+        payload = json.loads(request.body.decode('utf-8'))
+        
+        # Extraer datos del payload
+        original_problem = payload.get('original_problem', '')
+        model_dict = payload.get('model', {})
+        solver_result = payload.get('solver_result', {})
+        sensitivity_analysis = payload.get('sensitivity_analysis')
+        method = payload.get('method', 'simplex')
+        api_key = payload.get('api_key') or fastapi_settings.GROQ_API_KEY
+        
+        if not original_problem:
+            return _json_response({
+                'success': False,
+                'detail': 'Se requiere el enunciado original del problema'
+            }, status=400)
+        
+        if not solver_result:
+            return _json_response({
+                'success': False,
+                'detail': 'Se requiere el resultado del solver'
+            }, status=400)
+        
+        if not api_key:
+            return _json_response({
+                'success': False,
+                'detail': 'API key de Groq requerida para generar el informe ejecutivo'
+            }, status=401)
+        
+        # Extraer contexto y descripción de variables del modelo
+        model_context = model_dict.get('context', '')
+        variables_description = model_dict.get('variables', {})
+        
+        # Generar conclusión ejecutiva
+        from app.services.sensitivity_analysis import generate_executive_conclusion
+        
+        result = generate_executive_conclusion(
+            original_problem=original_problem,
+            model_context=model_context,
+            solver_result=solver_result,
+            sensitivity_analysis=sensitivity_analysis,
+            method=method,
+            variables_description=variables_description,
+            api_key=api_key
+        )
+        
+        return _json_response(result)
+        
+    except Exception as e:
+        logger.error(f"Error en generate_executive_report: {str(e)}", exc_info=True)
+        return _json_response({
+            'success': False,
+            'detail': f'Error generando informe ejecutivo: {str(e)}'
+        }, status=500)

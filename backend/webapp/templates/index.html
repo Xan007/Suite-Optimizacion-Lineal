@@ -834,6 +834,182 @@
         .final-tableau-toggle:hover {
             background: #e8ecf1;
         }
+
+        /* ====================================================================
+           ESTILOS PARA INFORME EJECUTIVO CON IA
+           ==================================================================== */
+        
+        .executive-report-container {
+            margin-top: 2rem;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .executive-report-header {
+            background: linear-gradient(135deg, #e94560 0%, #0f3460 100%);
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .executive-report-header h3 {
+            color: white;
+            margin: 0;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .executive-report-header .ai-badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .generate-report-btn {
+            background: linear-gradient(135deg, #00d9ff 0%, #00ff88 100%);
+            color: #1a1a2e;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 25px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .generate-report-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 217, 255, 0.4);
+        }
+
+        .generate-report-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .generate-report-btn .spinner-small {
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(26, 26, 46, 0.3);
+            border-top-color: #1a1a2e;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .executive-report-body {
+            padding: 2rem;
+            color: #e0e0e0;
+        }
+
+        .executive-report-content {
+            line-height: 1.8;
+            font-size: 0.95rem;
+        }
+
+        .executive-report-content h3 {
+            color: #00d9ff;
+            margin-top: 1.5rem;
+            margin-bottom: 0.8rem;
+            font-size: 1.15rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .executive-report-content h3:first-child {
+            margin-top: 0;
+        }
+
+        .executive-report-content h4 {
+            color: #00ff88;
+            margin-top: 1.2rem;
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .executive-report-content p {
+            margin: 0.6rem 0;
+            color: #c0c0c0;
+        }
+
+        .executive-report-content ul, .executive-report-content ol {
+            margin: 0.8rem 0;
+            padding-left: 1.5rem;
+        }
+
+        .executive-report-content li {
+            margin: 0.4rem 0;
+            color: #d0d0d0;
+        }
+
+        .executive-report-content strong {
+            color: #ffffff;
+        }
+
+        .executive-report-content code {
+            background: rgba(0, 217, 255, 0.1);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #00d9ff;
+        }
+
+        .executive-report-placeholder {
+            text-align: center;
+            padding: 3rem;
+            color: #888;
+        }
+
+        .executive-report-placeholder .icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .executive-report-placeholder p {
+            margin: 0.5rem 0;
+            font-size: 0.95rem;
+        }
+
+        .report-timestamp {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.8rem;
+            color: #666;
+            text-align: right;
+        }
+
+        .report-download-btn {
+            background: transparent;
+            border: 1px solid #00d9ff;
+            color: #00d9ff;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 1rem;
+        }
+
+        .report-download-btn:hover {
+            background: rgba(0, 217, 255, 0.1);
+        }
     </style>
     <script>
         window.MathJax = {
@@ -914,6 +1090,8 @@
         const apiBase = '/api/v1';
         let lastAnalysis = null;
         let selectedMethod = null;
+        let originalProblemText = null;  // Guardar el problema original para el informe ejecutivo
+        let lastSolverResult = null;     // Guardar el último resultado del solver
 
         // ====================================================================
         // ANÁLISIS: Entrada de datos (texto e imagen)
@@ -924,6 +1102,7 @@
                 showMessage('Por favor ingresa una descripción del problema', 'error');
                 return;
             }
+            originalProblemText = text;  // Guardar para el informe ejecutivo
             await analyze({ problem: text });
         }
 
@@ -1161,6 +1340,7 @@
 
                 const json = await resp.json();
                 if (json.result) {
+                    lastSolverResult = json.result;  // Guardar para el informe ejecutivo
                     displaySolution(json.result);
                     if (json.result.success === false) {
                         showMessage(json.result.error || 'Error al resolver', 'error');
@@ -1865,6 +2045,11 @@
             // Sensibilidad
             if (result.sensitivity_analysis) {
                 displaySensitivityAnalysis(result.sensitivity_analysis, result.method);
+            }
+
+            // Informe Ejecutivo con IA (solo para métodos compatibles con análisis de sensibilidad)
+            if (result.method === 'simplex' || result.method === 'dual_simplex' || result.method === 'big_m') {
+                displayExecutiveReportSection(result);
             }
 
             // Si es método gráfico, intentar dibujar la gráfica ANTES de la tabla
@@ -2957,6 +3142,191 @@
             if (value === Infinity || value > 1e10) return '∞';
             if (value === -Infinity || value < -1e10) return '-∞';
             return formatNumber(value, 4);
+        }
+
+        // ====================================================================
+        // INFORME EJECUTIVO CON IA
+        // ====================================================================
+        function displayExecutiveReportSection(result) {
+            const content = document.getElementById('solution-content');
+            
+            // Crear contenedor del informe ejecutivo
+            const container = document.createElement('div');
+            container.className = 'executive-report-container';
+            container.id = 'executive-report-section';
+            
+            // Header
+            const header = document.createElement('div');
+            header.className = 'executive-report-header';
+            header.innerHTML = `
+                <h3>
+                    <span>🤖</span>
+                    Informe Ejecutivo con IA
+                    <span class="ai-badge">Powered by Groq</span>
+                </h3>
+                <button class="generate-report-btn" onclick="generateExecutiveReport()" id="generate-report-btn">
+                    <span>✨</span>
+                    Generar Conclusión para Directivos
+                </button>
+            `;
+            container.appendChild(header);
+            
+            // Body
+            const body = document.createElement('div');
+            body.className = 'executive-report-body';
+            body.id = 'executive-report-body';
+            
+            body.innerHTML = `
+                <div class="executive-report-placeholder">
+                    <div class="icon">📊</div>
+                    <p><strong>Genera un informe ejecutivo personalizado</strong></p>
+                    <p>La IA analizará el problema original, la solución óptima y el análisis de sensibilidad</p>
+                    <p>para crear conclusiones y recomendaciones dirigidas a directivos.</p>
+                </div>
+            `;
+            
+            container.appendChild(body);
+            content.appendChild(container);
+        }
+        
+        async function generateExecutiveReport() {
+            const btn = document.getElementById('generate-report-btn');
+            const body = document.getElementById('executive-report-body');
+            
+            if (!lastAnalysis || !lastSolverResult) {
+                showMessage('Primero debes analizar y resolver un problema', 'error');
+                return;
+            }
+            
+            // Obtener el problema original
+            const problemText = originalProblemText || document.getElementById('problem-text').value || '';
+            
+            if (!problemText.trim()) {
+                showMessage('No se encontró el enunciado del problema original', 'error');
+                return;
+            }
+            
+            // Deshabilitar botón y mostrar loading
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-small"></span> Generando informe...';
+            
+            body.innerHTML = `
+                <div class="executive-report-placeholder">
+                    <div class="icon">⏳</div>
+                    <p><strong>Analizando datos con IA...</strong></p>
+                    <p>Esto puede tomar unos segundos.</p>
+                </div>
+            `;
+            
+            try {
+                const model = lastAnalysis.mathematical_model || (lastAnalysis.result && lastAnalysis.result.mathematical_model);
+                
+                const payload = {
+                    original_problem: problemText,
+                    model: model,
+                    solver_result: lastSolverResult,
+                    sensitivity_analysis: lastSolverResult.sensitivity_analysis || null,
+                    method: lastSolverResult.method || selectedMethod
+                };
+                
+                const resp = await fetch(`${apiBase}/analyze/executive-report`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const json = await resp.json();
+                
+                if (json.success && json.conclusion) {
+                    displayExecutiveConclusion(json.conclusion, json.tokens_used);
+                } else {
+                    body.innerHTML = `
+                        <div class="executive-report-placeholder" style="color: #e94560;">
+                            <div class="icon">❌</div>
+                            <p><strong>Error al generar el informe</strong></p>
+                            <p>${json.detail || json.error || 'Error desconocido'}</p>
+                        </div>
+                    `;
+                }
+            } catch (e) {
+                body.innerHTML = `
+                    <div class="executive-report-placeholder" style="color: #e94560;">
+                        <div class="icon">❌</div>
+                        <p><strong>Error de conexión</strong></p>
+                        <p>${e.message}</p>
+                    </div>
+                `;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span>🔄</span> Regenerar Informe';
+            }
+        }
+        
+        function displayExecutiveConclusion(conclusionText, tokensUsed) {
+            const body = document.getElementById('executive-report-body');
+            
+            // Convertir Markdown a HTML básico
+            let html = conclusionText
+                // Headers
+                .replace(/### (\d+)\. (.*)/g, '<h3><span style="color: #00ff88;">$1.</span> $2</h3>')
+                .replace(/### (.*)/g, '<h3>$1</h3>')
+                .replace(/## (.*)/g, '<h3 style="font-size: 1.3rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">$1</h3>')
+                // Bold
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                // Italic
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                // Lists
+                .replace(/^- (.*)/gm, '<li>$1</li>')
+                .replace(/^(\d+)\. (.*)/gm, '<li><strong>$1.</strong> $2</li>')
+                // Paragraphs
+                .replace(/\n\n/g, '</p><p>')
+                // Line breaks
+                .replace(/\n/g, '<br>');
+            
+            // Wrap list items in <ul>
+            html = html.replace(/(<li>.*?<\/li>)+/gs, '<ul>$&</ul>');
+            
+            body.innerHTML = `
+                <div class="executive-report-content">
+                    <p>${html}</p>
+                </div>
+                <div class="report-timestamp">
+                    Generado el ${new Date().toLocaleString('es-ES')} | Tokens utilizados: ${tokensUsed || 'N/A'}
+                </div>
+                <button class="report-download-btn" onclick="downloadExecutiveReport()">
+                    📥 Descargar como Texto
+                </button>
+            `;
+            
+            // Guardar el texto plano para descargar
+            body.dataset.conclusionText = conclusionText;
+        }
+        
+        function downloadExecutiveReport() {
+            const body = document.getElementById('executive-report-body');
+            const text = body.dataset.conclusionText || 'No hay informe disponible';
+            
+            const header = `
+================================================================================
+                    INFORME EJECUTIVO - OPTIMIZACIÓN LINEAL
+================================================================================
+Generado: ${new Date().toLocaleString('es-ES')}
+Problema Original: ${originalProblemText || 'No disponible'}
+================================================================================
+
+`;
+            
+            const fullText = header + text;
+            
+            const blob = new Blob([fullText], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `informe_ejecutivo_${new Date().toISOString().slice(0,10)}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
     </script>
 </body>
