@@ -26,6 +26,22 @@ class SolverService:
     def __init__(self):
         pass
 
+    def _safe_float_conversion(self, expr: Any) -> float:
+        """Convierte expresión SymPy a float de forma segura."""
+        try:
+            if expr is None or expr == 0:
+                return 0.0
+            # Si es un número, convertir directamente
+            if isinstance(expr, (int, float)):
+                return float(expr)
+            # Si es SymPy, evaluar numéricamente
+            if isinstance(expr, sp.Basic):
+                return float(expr.evalf())
+            return float(expr)
+        except Exception as e:
+            logger.warning(f"Error convirtiendo {expr} a float: {e}, retornando 0.0")
+            return 0.0
+
     def determine_applicable_methods(self, model: MathematicalModel) -> Tuple[List[str], Dict[str, str]]:
         """Retorna métodos sugeridos y no aplicables."""
         # Detectar si el problema necesita el método de la Gran M
@@ -216,7 +232,7 @@ class SolverService:
             
             # Parsear función objetivo
             obj_expr = sp.sympify(model.objective_function, locals=symbols)
-            c = np.array([float(obj_expr.coeff(symbols[v], 1) or 0) for v in var_names])
+            c = np.array([self._safe_float_conversion(obj_expr.coeff(symbols[v], 1) or 0) for v in var_names])
             is_max = model.objective == "max"
             if not is_max:
                 c = -c
@@ -230,11 +246,11 @@ class SolverService:
                 if not parsed:
                     continue
                 lhs, op, rhs_val = parsed
-                row = np.array([float(lhs.coeff(symbols[v], 1) or 0) for v in var_names])
+                row = np.array([self._safe_float_conversion(lhs.coeff(symbols[v], 1) or 0) for v in var_names])
                 if '>=' in op:
-                    row, rhs_val = -row, -float(rhs_val)
+                    row, rhs_val = -row, -self._safe_float_conversion(rhs_val)
                 A.append(row)
-                b.append(float(rhs_val))
+                b.append(self._safe_float_conversion(rhs_val))
             
             if not A:
                 return {"success": False, "error": "No hay restricciones estructurales", "steps": []}
@@ -291,9 +307,9 @@ class SolverService:
                     "slack_names": [f"s{i+1}" for i in range(m)]
                 })
             
-            solution = {v: float(tableau[[i for i, bv in enumerate(basis) if bv == v][0], -1]) if v in basis else 0.0 
+            solution = {v: self._safe_float_conversion(tableau[[i for i, bv in enumerate(basis) if bv == v][0], -1]) if v in basis else 0.0 
                        for v in var_names}
-            obj_value = float(obj_row[-1]) if is_max else -float(obj_row[-1])
+            obj_value = self._safe_float_conversion(obj_row[-1]) if is_max else -self._safe_float_conversion(obj_row[-1])
             
             # Generar ecuaciones LaTeX con variables de holgura
             equations_latex = self._generate_equations_latex(structural_constraints, var_names, symbols, A, b)
@@ -345,10 +361,10 @@ class SolverService:
                             eq = lhs.subs(fix_var, fix_val) - rhs_val
                             sol = sp.solve(eq, var)
                             if sol:
-                                val = float(sol[0])
+                                val = self._safe_float_conversion(sol[0])
                                 if val >= -self._TOL:
-                                    vertices.add((float(sp.sympify(val) if var == x else 0), 
-                                                 float(sp.sympify(val) if var == y else 0)))
+                                    vertices.add((self._safe_float_conversion(sol[0]) if var == x else 0, 
+                                                 self._safe_float_conversion(sol[0]) if var == y else 0))
                         except:
                             pass
                 
@@ -358,7 +374,7 @@ class SolverService:
                         try:
                             sol = sp.solve([lhs1 - rhs1, lhs2 - rhs2], [x, y])
                             if sol and isinstance(sol, dict):
-                                x_val, y_val = float(sol.get(x, 0)), float(sol.get(y, 0))
+                                x_val, y_val = self._safe_float_conversion(sol.get(x, 0)), self._safe_float_conversion(sol.get(y, 0))
                                 if x_val >= -self._TOL and y_val >= -self._TOL:
                                     vertices.add((x_val, y_val))
                         except:
@@ -369,8 +385,8 @@ class SolverService:
                 for v_x, v_y in vertices:
                     is_feasible = v_x >= -self._TOL and v_y >= -self._TOL
                     for lhs, op, rhs_val in constraints_ineq:
-                        val = float(lhs.subs({x: v_x, y: v_y}))
-                        rhs_float = float(rhs_val)
+                        val = self._safe_float_conversion(lhs.subs({x: v_x, y: v_y}))
+                        rhs_float = self._safe_float_conversion(rhs_val)
                         if (op == "<=" and val > rhs_float + self._FEASIBLE_TOL) or \
                            (op == ">=" and val < rhs_float - self._FEASIBLE_TOL) or \
                            (op == "=" and abs(val - rhs_float) > self._FEASIBLE_TOL):
@@ -386,7 +402,7 @@ class SolverService:
             evaluated_points = []
             best_value = best_point = None
             for point in feasible_points:
-                obj_val = float(obj_expr.subs({x: point[0], y: point[1]}))
+                obj_val = self._safe_float_conversion(obj_expr.subs({x: point[0], y: point[1]}))
                 evaluated_points.append({"point": point, "objective": obj_val, "is_optimal": False})
                 if best_value is None or (is_max and obj_val > best_value) or (not is_max and obj_val < best_value):
                     best_value, best_point = obj_val, point
@@ -396,7 +412,7 @@ class SolverService:
                     pt["is_optimal"] = True
                     break
             
-            solution = {x_name: float(best_point[0]), y_name: float(best_point[1])}
+            solution = {x_name: self._safe_float_conversion(best_point[0]), y_name: self._safe_float_conversion(best_point[1])}
             
             # Extraer información de restricciones y construir matrices A, b
             constraints_info = []
@@ -407,18 +423,18 @@ class SolverService:
                 parsed = self._parse_constraint(constraint_str, symbols)
                 if parsed:
                     lhs, op, rhs_val = parsed
-                    a_coeff = float(lhs.coeff(x, 1) or 0)
-                    b_coeff = float(lhs.coeff(y, 1) or 0)
+                    a_coeff = self._safe_float_conversion(lhs.coeff(x, 1) or 0)
+                    b_coeff = self._safe_float_conversion(lhs.coeff(y, 1) or 0)
                     constraints_info.append({
                         "constraint": constraint_str,
                         "a": a_coeff,
                         "b": b_coeff,
-                        "rhs": float(rhs_val),
+                        "rhs": self._safe_float_conversion(rhs_val),
                         "operator": op
                     })
                     A[idx, 0] = a_coeff
                     A[idx, 1] = b_coeff
-                    b[idx] = float(rhs_val)
+                    b[idx] = self._safe_float_conversion(rhs_val)
             
             # Generar ecuaciones LaTeX con subíndices
             equations_latex = self._generate_equations_latex_graphical(
@@ -436,8 +452,8 @@ class SolverService:
                 "constraints_info": constraints_info,
                 "equations_latex": equations_latex,
                 "steps": [],
-                "objective_coefficients": {x_name: float(obj_expr.coeff(x, 1) or 0), 
-                                          y_name: float(obj_expr.coeff(y, 1) or 0)},
+                "objective_coefficients": {x_name: self._safe_float_conversion(obj_expr.coeff(x, 1) or 0), 
+                                          y_name: self._safe_float_conversion(obj_expr.coeff(y, 1) or 0)},
                 "explanation": f"Método Gráfico: Se evaluaron {len(feasible_points)} vértices de la región factible"
             }
             

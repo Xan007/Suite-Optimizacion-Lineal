@@ -717,7 +717,11 @@
                 const json = await resp.json();
                 if (json.result) {
                     displaySolution(json.result);
-                    showMessage('✓ Problema resuelto exitosamente', 'success');
+                    if (json.result.success === false) {
+                        showMessage(json.result.error || 'Error al resolver', 'error');
+                    } else {
+                        showMessage('✓ Problema resuelto exitosamente', 'success');
+                    }
                 }
             } catch (e) {
                 showMessage(`Error: ${e.message}`, 'error');
@@ -729,6 +733,11 @@
         // ====================================================================
         function displaySolution(result) {
             console.log('displaySolution called with result:', result);
+            // If solver returned an error, show it and skip rendering
+            if (result && result.success === false) {
+                showMessage(result.error || 'Error al resolver el problema', 'error');
+                return;
+            }
             document.getElementById('solution-section').style.display = 'block';
             const content = document.getElementById('solution-content');
             content.innerHTML = '';
